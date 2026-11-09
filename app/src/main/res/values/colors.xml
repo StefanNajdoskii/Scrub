@@ -1,4 +1,5 @@
 <resources>
-    <color name="scrub_bg">#FF0E0E14</color>
-    <color name="ic_launcher_background">#FF15131F</color>
+    <!-- Window background before Compose draws: Chalk (light) / dark background -->
+    <color name="scrub_bg">#FFF2F3EF</color>
+    <color name="ic_launcher_background">#FFF2F3EF</color>
 </resources>

@@ -2,8 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Scrub never goes online: strip internet access that libraries might add -->
-    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <!-- Internet is used ONLY by Firebase Authentication (sign-in). Photos, faces.bin and the
+         vault never leave the phone: no Firestore, Storage, Analytics or Crashlytics. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Read photos (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

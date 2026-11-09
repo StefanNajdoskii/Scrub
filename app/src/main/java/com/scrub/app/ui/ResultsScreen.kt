@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,14 +18,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.SentimentSatisfied
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,9 +29,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
@@ -45,6 +41,7 @@ import com.scrub.app.ScrubViewModel
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ResultsScreen(vm: ScrubViewModel, onTrash: () -> Unit, onVault: () -> Unit) {
+    val c = ScrubTheme.colors
     val visible = vm.visibleMatches
     val selectedCount = visible.count { it.image.id !in vm.deselected }
     var preview by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -60,115 +57,93 @@ fun ResultsScreen(vm: ScrubViewModel, onTrash: () -> Unit, onVault: () -> Unit) 
             actions = {
                 if (visible.isNotEmpty()) {
                     val all = selectedCount == visible.size
-                    TextButton(onClick = { vm.selectAll(!all) }) {
-                        Text(if (all) "Select none" else "Select all", color = ScrubColors.Coral)
-                    }
+                    QuietButton(if (all) "Select none" else "Select all", onClick = { vm.selectAll(!all) })
                 }
             },
         )
 
-        // Strictness slider
-        Column(Modifier.padding(horizontal = 24.dp)) {
+        // Strictness
+        Column(Modifier.padding(horizontal = Gutter)) {
+            Spacer(Modifier.height(8.dp))
+            val pct = ((vm.strictness - ScrubViewModel.MIN_SCORE) /
+                (ScrubViewModel.MAX_SCORE - ScrubViewModel.MIN_SCORE) * 100).toInt()
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Match strictness", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                Text(
-                    "${((vm.strictness - ScrubViewModel.MIN_SCORE) / (ScrubViewModel.MAX_SCORE - ScrubViewModel.MIN_SCORE) * 100).toInt()}%",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text("Match strictness", style = ScrubType.SectionTitle, color = c.graphite, modifier = Modifier.weight(1f))
+                Text("$pct%", style = ScrubType.Small, color = c.pencil)
             }
             Slider(
                 value = vm.strictness,
                 onValueChange = { vm.strictness = it },
                 valueRange = ScrubViewModel.MIN_SCORE..ScrubViewModel.MAX_SCORE,
+                modifier = Modifier.semantics { contentDescription = "Match strictness" },
                 colors = SliderDefaults.colors(
-                    thumbColor = ScrubColors.Coral,
-                    activeTrackColor = ScrubColors.Coral,
-                    inactiveTrackColor = ScrubColors.SurfaceHigh,
+                    thumbColor = c.graphite,
+                    activeTrackColor = c.graphite,
+                    inactiveTrackColor = c.smudge,
+                    activeTickColor = c.graphite,
+                    inactiveTickColor = c.smudge,
                 ),
             )
             Text(
                 "Seeing other people? Slide right. Missing photos of them? Slide left. " +
-                    "Tap a photo to untick it, hold to view it bigger.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    "Tap a photo to untick it, hold to see it larger.",
+                style = ScrubType.Small,
+                color = c.pencil,
             )
+            Spacer(Modifier.height(16.dp))
         }
-
-        Spacer(Modifier.height(12.dp))
+        Hairline()
 
         if (visible.isEmpty()) {
             Box(
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(Gutter),
                 contentAlignment = Alignment.Center,
             ) {
                 Hero(
                     Icons.Filled.SentimentSatisfied,
                     "All clear",
-                    "No photos matched at this strictness. Slide left to loosen it, or add more photos of them on the start screen.",
+                    "No photos match at this strictness. Slide left to loosen it, or add more photos of them on the start screen.",
                 )
             }
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(horizontal = Gutter, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f),
             ) {
                 items(visible, key = { it.image.id }) { match ->
                     val selected = match.image.id !in vm.deselected
-                    Box(
-                        Modifier
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .combinedClickable(
-                                onClick = { vm.toggle(match) },
-                                onLongClick = { preview = match.image.uri },
-                            )
-                    ) {
-                        AsyncImage(
-                            model = match.image.uri,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .alpha(if (selected) 1f else 0.4f),
-                        )
-                        SelectionBadge(
-                            selected,
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(6.dp),
-                        )
-                    }
+                    PhotoTile(
+                        model = match.image.uri,
+                        contentDescription = if (selected) "Matching photo, ticked" else "Matching photo, not ticked",
+                        selected = selected,
+                        dimmed = !selected,
+                        onClick = { vm.toggle(match) },
+                        onLongClick = { preview = match.image.uri },
+                    )
                 }
             }
         }
 
-        // Action bar
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ActionBar(
+            caption = if (visible.isEmpty()) null else "$selectedCount of ${visible.size} ticked",
         ) {
             SecondaryButton(
-                "Vault",
+                "Hide",
                 onClick = onVault,
-                icon = Icons.Filled.Lock,
                 enabled = selectedCount > 0,
                 modifier = Modifier.weight(1f),
             )
-            GradientButton(
-                if (selectedCount == 0) "Trash" else "Trash $selectedCount",
+            PrimaryButton(
+                "Move to trash",
                 onClick = onTrash,
-                icon = Icons.Filled.Delete,
                 enabled = selectedCount > 0,
-                modifier = Modifier.weight(1.4f),
+                modifier = Modifier.weight(1.5f),
             )
         }
     }
@@ -177,12 +152,13 @@ fun ResultsScreen(vm: ScrubViewModel, onTrash: () -> Unit, onVault: () -> Unit) 
         Dialog(onDismissRequest = { preview = null }) {
             AsyncImage(
                 model = uri,
-                contentDescription = null,
+                contentDescription = "Photo, larger",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .combinedClickable(onClick = { preview = null }),
+                    .clip(RoundedCornerShape(TileRadius))
+                    .background(c.paper)
+                    .combinedClickable(onClickLabel = "Close", onClick = { preview = null }),
             )
         }
     }

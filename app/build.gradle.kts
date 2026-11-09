@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    // Reads app/google-services.json (generates R.string.default_web_client_id)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -69,4 +71,17 @@ dependencies {
 
     // On-device face recognition (FaceNet model in assets/)
     implementation("org.tensorflow:tensorflow-lite:2.16.1")
+
+    // Accounts. Firebase Authentication is the ONLY networked component in the app.
+    // Never add Firestore, Storage, Analytics, Crashlytics or any other Firebase product:
+    // photos, faces.bin and the vault must never leave the phone. See CLAUDE.md.
+    // BoM 34.19.0 (firebase-auth 24.2.0) is the newest built with Kotlin metadata <= 2.3, which
+    // Kotlin 2.2 can read. BoM 35.x needs Kotlin 2.3+. Same for googleid 1.2.0 vs 1.2.1.
+    implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
+    implementation("com.google.firebase:firebase-auth")
+
+    // "Continue with Google" through Credential Manager (not the deprecated GoogleSignInClient)
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.2.0")
 }

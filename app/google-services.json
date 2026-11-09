@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "993901311697",
+    "project_id": "scrub-ee420",
+    "storage_bucket": "scrub-ee420.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:993901311697:android:6a0c098d21765227e437f0",
+        "android_client_info": {
+          "package_name": "com.scrub.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "993901311697-aa23l5fctnub0gi6m0im8fcr0okqg95o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.scrub.app",
+            "certificate_hash": "8afc306b70698b55774f5efcd8dbe5fd9eeba0fc"
+          }
+        },
+        {
+          "client_id": "993901311697-c0tpie4p5vm570she0eeelt4g4de2u3s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDK8VQciTkOMzY9Gq1rVmnooCmGg7aRkI8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "993901311697-c0tpie4p5vm570she0eeelt4g4de2u3s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

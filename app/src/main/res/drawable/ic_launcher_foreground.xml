@@ -1,34 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A rounded photo frame with a sweeping eraser stroke through it -->
+<!-- A printed photo with an eraser swipe through it. Graphite on Chalk, Eraser pink swipe. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- swipe, behind the frame -->
+    <path
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeColor="#FFF2A0AE"
+        android:fillColor="#00000000"
+        android:pathData="M32,66 L76,58" />
     <!-- frame -->
     <path
-        android:strokeWidth="4"
-        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeColor="#FF23252A"
         android:fillColor="#00000000"
-        android:pathData="M40,34 L68,34 Q74,34 74,40 L74,68 Q74,74 68,74 L40,74 Q34,74 34,68 L34,40 Q34,34 40,34 Z" />
-    <!-- face silhouette -->
+        android:pathData="M38,34 L70,34 Q74,34 74,38 L74,70 Q74,74 70,74 L38,74 Q34,74 34,70 L34,38 Q34,34 38,34 Z" />
+    <!-- face -->
     <path
-        android:fillColor="#FFFFFFFF"
+        android:fillColor="#FF23252A"
         android:pathData="M47,48 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0 Z M41,70 Q42,58 54,58 Q66,58 67,70 Z" />
-    <!-- sweep -->
-    <path
-        android:strokeWidth="7"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000"
-        android:pathData="M30,80 Q54,62 80,30">
-        <aapt:attr name="android:strokeColor">
-            <gradient
-                android:type="linear"
-                android:startX="30" android:startY="80"
-                android:endX="80" android:endY="30"
-                android:startColor="#FFFF6B6B"
-                android:endColor="#FF8B5CF6" />
-        </aapt:attr>
-    </path>
 </vector>
