@@ -5,6 +5,13 @@
     <!-- Internet is used ONLY by Firebase Authentication (sign-in). Photos, faces.bin and the
          vault never leave the phone: no Firestore, Storage, Analytics or Crashlytics. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- ACCESS_NETWORK_STATE and READ_GSERVICES are added by Firebase Auth and its reCAPTCHA
+         bot protection (used for sign-in), so they stay. -->
+
+    <!-- Added by androidx.biometric via Credential Manager, for passkeys. Scrub doesn't use
+         biometrics, so don't request them. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" tools:node="remove" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" tools:node="remove" />
 
     <!-- Read photos (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

@@ -47,9 +47,15 @@ app/src/main/java/com/scrub/app/
   ui/                    Compose screens and theme
 ```
 
+## Release
+
+See `PLAY_STORE_CHECKLIST.md`. In short: create an upload keystore, add `keystore.properties`
+in the project root (git-ignored), then run `gradlew bundleRelease`.
+
 ## Notes
 
 - Firebase config lives in `app/google-services.json` (project `scrub-ee420`).
 - Uninstalling Scrub deletes the vault. Restore anything you want to keep first.
+- FaceNet runs on LiteRT (the TensorFlow Lite runtime, 16 KB page-size compatible).
 - FaceNet model: from shubham0204/FaceRecognition_With_FaceNet_Android (Apache-2.0).
   The license is in `assets/facenet_LICENSE.txt`.

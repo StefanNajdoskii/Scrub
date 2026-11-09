@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,22 +8,48 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Release signing. Reads keystore.properties in the project root (never committed):
+//   storeFile=/absolute/path/to/scrub-upload.jks
+//   storePassword=...
+//   keyAlias=scrub-upload
+//   keyPassword=...
+// Without the file, release builds are left unsigned.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.scrub.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.scrub.app"
         minSdk = 30          // Android 11+: needed for the system trash / delete dialogs
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (keystoreProperties.getProperty("storeFile") != null) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -69,8 +97,14 @@ dependencies {
     // On-device face detection (bundled model, works offline)
     implementation("com.google.mlkit:face-detection:16.1.7")
 
-    // On-device face recognition (FaceNet model in assets/)
-    implementation("org.tensorflow:tensorflow-lite:2.16.1")
+    // On-device face recognition (FaceNet model in assets/). LiteRT is the renamed TensorFlow
+    // Lite runtime: same org.tensorflow.lite.Interpreter API, but its native library is built
+    // for 16 KB memory pages (Play requirement). tensorflow-lite 2.16.1 is 4 KB aligned.
+    // Staying on 1.x: 2.x drops 32-bit x86 and moves to the CompiledModel API.
+    implementation("com.google.ai.edge.litert:litert:1.4.2")
+
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
 
     // Accounts. Firebase Authentication is the ONLY networked component in the app.
     // Never add Firestore, Storage, Analytics, Crashlytics or any other Firebase product:

@@ -33,6 +33,18 @@ Use the pencil-and-eraser design system in `ui/Theme.kt` (colors via `ScrubTheme
 Eraser pink is a fill, never text. Ink red is for errors and permanent actions only.
 Every screen must work in light and dark; add `@ScreenPreviews` previews for new screens.
 
-## Build
+## Build and release
 
-`./gradlew assembleDebug`. Needs `app/google-services.json` (Firebase project `scrub-ee420`).
+- `./gradlew assembleDebug`. Needs `app/google-services.json` (Firebase project `scrub-ee420`).
+- Release: `./gradlew bundleRelease`. R8 + resource shrinking are on; keep rules are in
+  `app/proguard-rules.pro`. It also strips `Log.v/d/i` everywhere, so don't rely on those
+  in release, and never log emails, user IDs or photo URIs.
+- Signing reads `keystore.properties` (git-ignored, never commit it or any `*.jks`).
+- Target/compile SDK 36. All 64-bit native libraries must stay **16 KB page aligned**
+  (Play requirement). FaceNet runs on LiteRT 1.4.x (`com.google.ai.edge.litert:litert`), not
+  `org.tensorflow:tensorflow-lite`, whose 2.16.1 library is 4 KB aligned. After adding or
+  upgrading any library with native code, check alignment in the APK Analyzer or with
+  `zipalign -c -P 16 -v 4 app.apk`.
+- `EmbeddingRegressionTest` (androidTest) pins FaceNet output to the original runtime's
+  values. Run it after touching the ML runtime or `FaceEmbedder`.
+- Play submission steps: `PLAY_STORE_CHECKLIST.md`.
