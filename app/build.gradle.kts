@@ -84,6 +84,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
 
     implementation("androidx.core:core-ktx:1.16.0")
+    // Launch screen (Chalk / dark background + icon), backported to Android 11
+    implementation("androidx.core:core-splashscreen:1.2.0")
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")

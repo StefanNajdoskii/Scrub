@@ -1,6 +1,14 @@
 package com.scrub.app.ui
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,19 +31,42 @@ import androidx.compose.ui.unit.dp
 import com.scrub.app.Screen
 import com.scrub.app.ScrubViewModel
 
+/** [photo] is the picked photo, shown while faces are being found in it. */
 @Composable
-fun PickFaceScreen(vm: ScrubViewModel, onPickAnother: () -> Unit) {
+fun PickFaceScreen(vm: ScrubViewModel, photo: Uri?, onPickAnother: () -> Unit) {
     val c = ScrubTheme.colors
     Column(Modifier.fillMaxSize()) {
         TopBar("Which one is them?", onBack = { vm.screen = Screen.Home })
 
         when {
-            vm.pickLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Spinner()
-                    Spacer(Modifier.height(16.dp))
-                    Text("Looking for faces", style = ScrubType.Body, color = c.pencil)
+            vm.pickLoading -> Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = Gutter, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (photo != null) {
+                    // A thin pink line sweeps slowly down the photo while faces are detected.
+                    val sweep = rememberSweepProgress()
+                    AsyncImage(
+                        model = photo,
+                        contentDescription = "The photo you picked",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .clip(RoundedCornerShape(TileRadius))
+                            .sweepLine(c.eraser, sweep),
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
                 }
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "Looking for faces",
+                    style = ScrubType.Body,
+                    color = c.pencil,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
             }
 
             vm.candidateFaces.isEmpty() -> Column(

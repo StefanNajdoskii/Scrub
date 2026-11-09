@@ -129,7 +129,7 @@ fun ScrubTextField(
 
     Column(modifier.fillMaxWidth()) {
         Text(label, style = ScrubType.Small, color = c.graphite)
-        Spacer(Modifier.size(6.dp))
+        Spacer(Modifier.size(8.dp))
         CompositionLocalProvider(
             LocalTextSelectionColors provides TextSelectionColors(
                 handleColor = c.graphite,
@@ -182,9 +182,9 @@ fun ScrubTextField(
             )
         }
         when {
-            error != null -> FieldError(error, Modifier.padding(top = 6.dp))
+            error != null -> FieldError(error, Modifier.padding(top = 8.dp))
             hint != null -> Row(
-                Modifier.padding(top = 6.dp),
+                Modifier.padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (hintMet) {

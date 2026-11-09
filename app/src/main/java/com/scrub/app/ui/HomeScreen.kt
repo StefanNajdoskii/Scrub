@@ -170,7 +170,7 @@ private fun HomeContent(
                     state = if (hasRefs) StepState.Done else StepState.Active,
                 ) {
                     Spacer(Modifier.height(16.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         items(references) { ref ->
                             // 8dp extra on top/right leaves room for the remove "x".
                             Box(Modifier.size(FaceSize + 8.dp)) {
@@ -268,8 +268,8 @@ private fun VerifyEmailNote(onDismiss: () -> Unit) {
             .padding(start = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.Email, null, Modifier.size(18.dp), tint = c.graphite)
-        Spacer(Modifier.width(12.dp))
+        Icon(Icons.Outlined.Email, null, Modifier.size(20.dp), tint = c.graphite)
+        Spacer(Modifier.width(16.dp))
         Text(
             "Check your inbox to verify your email.",
             style = ScrubType.Small,
@@ -335,16 +335,16 @@ private fun Step(
                 StepState.Done ->
                     Icon(Icons.Filled.Check, "Done", tint = c.onEraser, modifier = Modifier.size(16.dp))
                 StepState.Active ->
-                    Text("$number", style = ScrubType.Button.copy(fontSize = 14.sp), color = c.chalk)
+                    Text("$number", style = ScrubType.StepNumber, color = c.chalk)
                 StepState.Upcoming ->
-                    Text("$number", style = ScrubType.Button.copy(fontSize = 14.sp), color = c.pencil)
+                    Text("$number", style = ScrubType.StepNumber, color = c.pencil)
             }
         }
         Spacer(Modifier.width(16.dp))
         Column(
             Modifier
                 .weight(1f)
-                .padding(bottom = if (last) 0.dp else 28.dp)
+                .padding(bottom = if (last) 0.dp else 32.dp)
         ) {
             Text(
                 title,
@@ -407,10 +407,10 @@ private fun AddPhotoSlot(onClick: () -> Unit) {
         ) {
             Icon(Icons.Filled.Add, contentDescription = null, tint = c.graphite)
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             "Add photo",
-            style = ScrubType.Small.copy(fontSize = 14.sp),
+            style = ScrubType.Small,
             color = c.pencil,
             textAlign = TextAlign.Center,
             modifier = Modifier.width(FaceSize),

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed-icon layer: the "s" only. The system tints it.
+     Generated from the bundled Bricolage Grotesque ExtraBold "s" (res/font, OFL). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FF23252A"
+        android:pathData="M54.33 77Q45.56 77 40.14 73.94Q34.72 70.88 33.48 65.58L43.41 61.2Q44.24 63.43 47.13 65.42Q50.03 67.4 55.24 67.4Q58.55 67.4 60.41 66.45Q62.27 65.5 62.27 63.68Q62.27 61.78 59.92 60.83Q57.56 59.87 53.01 58.96Q49.95 58.3 46.68 57.43Q43.41 56.56 40.6 55.03Q37.78 53.5 36.09 50.98Q34.39 48.46 34.39 44.57Q34.39 38.53 39.23 34.76Q44.07 31 53.34 31Q61.45 31 66.7 34.1Q71.95 37.21 73.69 42.67L63.02 46.47Q62.36 43.82 59.87 42.21Q57.39 40.6 53.5 40.6Q50.28 40.6 48.5 41.63Q46.72 42.67 46.72 44.24Q46.72 46.22 49.37 47.22Q52.01 48.21 56.65 49.12Q59.87 49.78 63.06 50.65Q66.24 51.52 68.85 52.97Q71.46 54.41 72.99 56.77Q74.52 59.13 74.52 62.85Q74.52 69.47 69.31 73.24Q64.09 77 54.33 77Z" />
+</vector>

@@ -1,5 +1,9 @@
 <resources>
-    <!-- Window background before Compose draws: Chalk (light) / dark background -->
+    <!-- Window and splash background before Compose draws: Chalk (light) / #1A1B1E (dark) -->
     <color name="scrub_bg">#FFF2F3EF</color>
+    <!-- Launcher icon background: always Chalk -->
     <color name="ic_launcher_background">#FFF2F3EF</color>
+    <!-- Circle behind the splash icon: Chalk in both themes, so the Graphite "s" stays
+         visible on the dark splash background -->
+    <color name="splash_icon_bg">#FFF2F3EF</color>
 </resources>

@@ -35,7 +35,7 @@ import com.scrub.app.auth.AuthError
 import com.scrub.app.auth.AuthUser
 import com.scrub.app.auth.SignInMethod
 
-private val DialogShape = RoundedCornerShape(20.dp)
+
 
 @Composable
 fun AccountScreen(
@@ -173,8 +173,8 @@ private fun DetailRow(label: String, value: String) {
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(label, style = ScrubType.Small, color = c.pencil)
         Text(value, style = ScrubType.Body, color = c.graphite)
@@ -227,7 +227,7 @@ private fun ReauthDialog(
                         enabled = !pending,
                     )
                 } else if (error != null) {
-                    FieldError(error, Modifier.padding(top = 12.dp))
+                    FieldError(error, Modifier.padding(top = 8.dp))
                 }
             }
         },

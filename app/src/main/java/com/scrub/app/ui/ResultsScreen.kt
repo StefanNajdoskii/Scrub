@@ -1,6 +1,16 @@
 package com.scrub.app.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,22 +55,22 @@ fun ResultsScreen(vm: ScrubViewModel, onTrash: () -> Unit, onVault: () -> Unit) 
     val visible = vm.visibleMatches
     val selectedCount = visible.count { it.image.id !in vm.deselected }
     var preview by remember { mutableStateOf<android.net.Uri?>(null) }
+    val haptics = LocalHapticFeedback.current
+    val off = rememberAnimationsOff()
 
     Column(Modifier.fillMaxSize()) {
-        TopBar(
-            title = when (visible.size) {
-                0 -> "No matches"
-                1 -> "1 photo found"
-                else -> "${visible.size} photos found"
-            },
-            onBack = { vm.goHome() },
-            actions = {
-                if (visible.isNotEmpty()) {
-                    val all = selectedCount == visible.size
-                    QuietButton(if (all) "Select none" else "Select all", onClick = { vm.selectAll(!all) })
-                }
-            },
-        )
+        val actions: @Composable () -> Unit = {
+            if (visible.isNotEmpty()) {
+                val all = selectedCount == visible.size
+                QuietButton(if (all) "Select none" else "Select all", onClick = { vm.selectAll(!all) })
+            }
+        }
+        // The count rolls up or down as the strictness slider moves.
+        when (visible.size) {
+            0 -> TopBar("No matches", onBack = { vm.goHome() }, actions = actions)
+            1 -> TopBar("1 photo of them", onBack = { vm.goHome() }, actions = actions)
+            else -> TopBar(CountLabel("", visible.size, " photos of them"), onBack = { vm.goHome() }, actions = actions)
+        }
 
         // Strictness
         Column(Modifier.padding(horizontal = Gutter)) {
@@ -123,28 +133,38 @@ fun ResultsScreen(vm: ScrubViewModel, onTrash: () -> Unit, onVault: () -> Unit) 
                         contentDescription = if (selected) "Matching photo, ticked" else "Matching photo, not ticked",
                         selected = selected,
                         dimmed = !selected,
-                        onClick = { vm.toggle(match) },
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            vm.toggle(match)
+                        },
                         onLongClick = { preview = match.image.uri },
                     )
                 }
             }
         }
 
-        ActionBar(
-            caption = if (visible.isEmpty()) null else "$selectedCount of ${visible.size} ticked",
+        // Slides in when something gets ticked, out when nothing is.
+        AnimatedVisibility(
+            visible = selectedCount > 0,
+            enter = if (off) EnterTransition.None
+            else slideInVertically(tween(220)) { it } + expandVertically(tween(220), expandFrom = Alignment.Top),
+            exit = if (off) ExitTransition.None
+            else slideOutVertically(tween(180)) { it } + shrinkVertically(tween(180), shrinkTowards = Alignment.Top),
         ) {
-            SecondaryButton(
-                "Hide",
-                onClick = onVault,
-                enabled = selectedCount > 0,
-                modifier = Modifier.weight(1f),
-            )
-            PrimaryButton(
-                "Move to trash",
-                onClick = onTrash,
-                enabled = selectedCount > 0,
-                modifier = Modifier.weight(1.5f),
-            )
+            ActionBar(caption = CountLabel("", selectedCount, " of ${visible.size} ticked")) {
+                SecondaryButton(
+                    CountLabel("Hide ", selectedCount),
+                    onClick = onVault,
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.weight(1f),
+                )
+                PrimaryButton(
+                    CountLabel("Move ", selectedCount, " to trash"),
+                    onClick = onTrash,
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.weight(1.5f),
+                )
+            }
         }
     }
 

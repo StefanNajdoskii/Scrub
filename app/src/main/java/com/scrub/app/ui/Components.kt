@@ -13,6 +13,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,6 +84,8 @@ val Gutter = 24.dp
 val ButtonRadius = 14.dp
 val TileRadius = 6.dp
 private val ButtonShape = RoundedCornerShape(ButtonRadius)
+/** All dialogs: Paper, 20dp corners. */
+val DialogShape = RoundedCornerShape(20.dp)
 private val TileShape = RoundedCornerShape(TileRadius)
 
 /**
@@ -117,6 +125,9 @@ fun Hairline(modifier: Modifier = Modifier) {
 
 private enum class ButtonKind { Primary, Secondary }
 
+/** Button text with a number that rolls when it changes: "Move ", 12, " to trash". */
+data class CountLabel(val before: String, val count: Int, val after: String = "")
+
 /** Small spinner shown inside a button while its request runs. */
 @Composable
 private fun ButtonSpinner(color: Color, size: Dp) {
@@ -138,18 +149,29 @@ private fun FilledButton(
     icon: ImageVector?,
     painter: Painter? = null,
     loading: Boolean = false,
+    countLabel: CountLabel? = null,
 ) {
     val c = ScrubTheme.colors
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
+    val pressed by source.collectIsPressedAsState()
     val fill: Color
     val content: Color
     val outline: Color?
     when {
         // A loading button keeps its colors so it's clear which one is working.
         !enabled && !loading -> { fill = c.smudge; content = c.pencil; outline = null }
-        kind == ButtonKind.Primary -> { fill = c.eraser; content = c.onEraser; outline = null }
-        else -> { fill = Color.Transparent; content = c.graphite; outline = c.graphite }
+        // Pressed: the fill darkens slightly (no ripple).
+        kind == ButtonKind.Primary -> {
+            fill = if (pressed) lerp(c.eraser, Color.Black, 0.10f) else c.eraser
+            content = c.onEraser
+            outline = null
+        }
+        else -> {
+            fill = if (pressed) c.graphite.copy(alpha = 0.08f) else Color.Transparent
+            content = c.graphite
+            outline = c.graphite
+        }
     }
 
     Row(
@@ -162,7 +184,7 @@ private fun FilledButton(
             .then(if (outline != null) Modifier.border(1.dp, outline, ButtonShape) else Modifier)
             .clickable(
                 interactionSource = source,
-                indication = ripple(color = content),
+                indication = null,
                 enabled = enabled && !loading,
                 role = Role.Button,
                 onClick = onClick,
@@ -174,7 +196,7 @@ private fun FilledButton(
         when {
             loading -> {
                 ButtonSpinner(content, 20.dp)
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(8.dp))
             }
             painter != null -> {
                 Image(
@@ -191,7 +213,11 @@ private fun FilledButton(
                 Spacer(Modifier.width(8.dp))
             }
         }
-        Text(text, style = ScrubType.Button, color = content, maxLines = 1)
+        if (countLabel != null) {
+            CountText(countLabel.before, countLabel.count, countLabel.after, ScrubType.Button, content)
+        } else {
+            Text(text, style = ScrubType.Button, color = content, maxLines = 1)
+        }
     }
 }
 
@@ -205,6 +231,24 @@ fun PrimaryButton(
     icon: ImageVector? = null,
     loading: Boolean = false,
 ) = FilledButton(ButtonKind.Primary, text, onClick, modifier, enabled, icon, loading = loading)
+
+/** Primary button whose label contains a number that rolls when it changes. */
+@Composable
+fun PrimaryButton(
+    label: CountLabel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) = FilledButton(ButtonKind.Primary, "", onClick, modifier, enabled, null, countLabel = label)
+
+/** Secondary button whose label contains a number that rolls when it changes. */
+@Composable
+fun SecondaryButton(
+    label: CountLabel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) = FilledButton(ButtonKind.Secondary, "", onClick, modifier, enabled, null, countLabel = label)
 
 /**
  * Transparent with a 1dp Graphite outline. Use [painter] for a multicolor logo (drawn
@@ -256,7 +300,7 @@ private fun PlainTextButton(
             ButtonSpinner(content, 16.dp)
             Spacer(Modifier.width(8.dp))
         } else if (icon != null) {
-            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
+            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
         }
         Text(text, style = ScrubType.Button, color = content)
@@ -382,8 +426,20 @@ fun Wordmark(modifier: Modifier = Modifier, animate: Boolean = true) {
 
 /** Back button row with optional actions, then the screen title. */
 @Composable
-fun TopBar(title: String, onBack: () -> Unit, actions: @Composable () -> Unit = {}) {
-    val c = ScrubTheme.colors
+fun TopBar(title: String, onBack: () -> Unit, actions: @Composable () -> Unit = {}) =
+    TopBar(onBack = onBack, actions = actions) {
+        Text(title, style = ScrubType.ScreenTitle, color = ScrubTheme.colors.graphite)
+    }
+
+/** Top bar whose title contains a number that rolls when it changes ("38 photos of them"). */
+@Composable
+fun TopBar(title: CountLabel, onBack: () -> Unit, actions: @Composable () -> Unit = {}) =
+    TopBar(onBack = onBack, actions = actions) {
+        CountText(title.before, title.count, title.after, ScrubType.ScreenTitle, ScrubTheme.colors.graphite)
+    }
+
+@Composable
+private fun TopBar(onBack: () -> Unit, actions: @Composable () -> Unit, title: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier
@@ -396,28 +452,40 @@ fun TopBar(title: String, onBack: () -> Unit, actions: @Composable () -> Unit = 
             Spacer(Modifier.weight(1f))
             actions()
         }
-        Text(
-            title,
-            style = ScrubType.ScreenTitle,
-            color = c.graphite,
-            modifier = Modifier
+        Box(
+            Modifier
                 .padding(horizontal = Gutter)
-                .padding(top = 8.dp, bottom = 8.dp)
-                .semantics { heading() },
-        )
+                .padding(vertical = 8.dp)
+                .semantics(mergeDescendants = true) { heading() },
+        ) { title() }
     }
 }
 
 /** Bottom action area: Paper on Chalk, separated by a hairline. */
 @Composable
-fun ActionBar(caption: String? = null, content: @Composable () -> Unit) {
+fun ActionBar(caption: String? = null, content: @Composable () -> Unit) =
+    ActionBarLayout(
+        caption = caption?.let { { Text(it, style = ScrubType.Small, color = ScrubTheme.colors.pencil) } },
+        content = content,
+    )
+
+/** Action bar whose caption contains a rolling number ("12 of 38 ticked"). */
+@Composable
+fun ActionBar(caption: CountLabel, content: @Composable () -> Unit) =
+    ActionBarLayout(
+        caption = { CountText(caption.before, caption.count, caption.after, ScrubType.Small, ScrubTheme.colors.pencil) },
+        content = content,
+    )
+
+@Composable
+private fun ActionBarLayout(caption: (@Composable () -> Unit)?, content: @Composable () -> Unit) {
     val c = ScrubTheme.colors
     Column(Modifier.fillMaxWidth().background(c.paper)) {
         Hairline()
         Column(Modifier.padding(horizontal = Gutter, vertical = 16.dp)) {
             if (caption != null) {
-                Text(caption, style = ScrubType.Small, color = c.pencil)
-                Spacer(Modifier.height(12.dp))
+                caption()
+                Spacer(Modifier.height(8.dp))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 content()
@@ -434,19 +502,27 @@ fun ActionBar(caption: String? = null, content: @Composable () -> Unit) {
 @Composable
 fun SelectionBadge(selected: Boolean, modifier: Modifier = Modifier) {
     val c = ScrubTheme.colors
-    Box(
-        modifier
-            .size(24.dp)
-            .clip(CircleShape)
-            .then(
-                if (selected) Modifier.background(c.eraser)
-                else Modifier
-                    .background(c.photoScrim.copy(alpha = 0.3f))
-                    .border(2.dp, c.onPhoto, CircleShape)
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (selected) Icon(Icons.Filled.Check, null, tint = c.onEraser, modifier = Modifier.size(16.dp))
+    val off = rememberAnimationsOff()
+    Crossfade(
+        targetState = selected,
+        animationSpec = if (off) snap() else tween(150),
+        label = "badge",
+        modifier = modifier.size(24.dp),
+    ) { isSelected ->
+        Box(
+            Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .then(
+                    if (isSelected) Modifier.background(c.eraser)
+                    else Modifier
+                        .background(c.photoScrim.copy(alpha = 0.3f))
+                        .border(2.dp, c.onPhoto, CircleShape)
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isSelected) Icon(Icons.Filled.Check, null, tint = c.onEraser, modifier = Modifier.size(16.dp))
+        }
     }
 }
 
@@ -468,9 +544,21 @@ fun PhotoTile(
     val c = ScrubTheme.colors
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
+    val pressed by source.collectIsPressedAsState()
+    val off = rememberAnimationsOff()
+    // Quick press feedback: shrink to 0.96 while held, back on release.
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = if (off) snap() else tween(90),
+        label = "tilePress",
+    )
     Box(
         modifier
             .aspectRatio(1f)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .focusRing(focused, c.graphite, TileRadius)
             .clip(TileShape)
             .background(c.paper)

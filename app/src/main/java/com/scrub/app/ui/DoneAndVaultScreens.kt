@@ -31,28 +31,6 @@ import androidx.compose.ui.unit.dp
 import com.scrub.app.Screen
 import com.scrub.app.ScrubViewModel
 
-@Composable
-fun DoneScreen(vm: ScrubViewModel) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(Gutter),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.weight(1f))
-        Hero(Icons.Filled.Done, vm.doneTitle, vm.doneBody, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.weight(1f))
-        if (vm.matches.isNotEmpty()) {
-            SecondaryButton(
-                "Review the other ${vm.visibleMatches.size}",
-                onClick = { vm.screen = Screen.Results },
-            )
-            Spacer(Modifier.height(16.dp))
-        }
-        PrimaryButton("Finish", onClick = { vm.startOver() })
-    }
-}
-
 /** The vault, shown to people as "Hidden photos". */
 @Composable
 fun VaultScreen(vm: ScrubViewModel) {
@@ -159,7 +137,7 @@ fun VaultScreen(vm: ScrubViewModel) {
                 })
             },
             dismissButton = { QuietButton("Cancel", onClick = { confirmDelete = false }) },
-            shape = RoundedCornerShape(20.dp),
+            shape = DialogShape,
             containerColor = c.paper,
             tonalElevation = 0.dp,
         )

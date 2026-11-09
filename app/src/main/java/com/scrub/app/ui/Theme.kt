@@ -101,6 +101,11 @@ object ScrubType {
         fontFamily = Bricolage, fontWeight = FontWeight.Medium,
         fontSize = 16.sp, lineHeight = 24.sp,
     )
+    /** Numbers in the 28dp step circles (Home steps, intro pages). */
+    val StepNumber = TextStyle(
+        fontFamily = Bricolage, fontWeight = FontWeight.Medium,
+        fontSize = 14.sp, lineHeight = 20.sp,
+    )
 }
 
 private val Type = Typography(

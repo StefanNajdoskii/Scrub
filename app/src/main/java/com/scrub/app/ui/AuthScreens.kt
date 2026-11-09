@@ -2,6 +2,8 @@ package com.scrub.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -55,7 +57,12 @@ fun AuthFlow(vm: AuthViewModel) {
 
     BackHandler(enabled = route != AuthRoute.SignIn) { go(AuthRoute.SignIn) }
 
-    Crossfade(targetState = route, label = "auth") { r ->
+    val animationsOff = rememberAnimationsOff()
+    Crossfade(
+        targetState = route,
+        animationSpec = if (animationsOff) snap() else tween(),
+        label = "auth",
+    ) { r ->
         when (r) {
             AuthRoute.SignIn -> SignInScreen(
                 email = email,
@@ -219,7 +226,7 @@ fun SignInScreen(
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            if (formError != null) FieldError(formError, Modifier.padding(bottom = 12.dp))
+            if (formError != null) FieldError(formError, Modifier.padding(bottom = 8.dp))
             Spacer(Modifier.height(8.dp))
             PrimaryButton(
                 text = "Sign in",
@@ -296,7 +303,7 @@ fun CreateAccountScreen(
                 // Live hint: counts down, then ticks. Turns into an error only after submitting.
                 error = passwordError,
                 hint = if (longEnough || password.isEmpty()) "At least 8 characters"
-                else "At least 8 characters · $toGo more",
+                else "At least 8 characters ($toGo more)",
                 hintMet = longEnough,
                 enabled = idle,
             )
@@ -312,7 +319,7 @@ fun CreateAccountScreen(
                 enabled = idle,
             )
             Spacer(Modifier.height(24.dp))
-            if (formError != null) FieldError(formError, Modifier.padding(bottom = 12.dp))
+            if (formError != null) FieldError(formError, Modifier.padding(bottom = 8.dp))
             PrimaryButton(
                 text = "Create account",
                 onClick = ::submit,
@@ -392,7 +399,7 @@ fun ForgotPasswordScreen(
                     enabled = idle,
                 )
                 Spacer(Modifier.height(24.dp))
-                if (formError != null) FieldError(formError, Modifier.padding(bottom = 12.dp))
+                if (formError != null) FieldError(formError, Modifier.padding(bottom = 8.dp))
                 PrimaryButton(
                     text = "Send reset link",
                     onClick = ::submit,

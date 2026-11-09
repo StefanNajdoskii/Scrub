@@ -1,9 +1,23 @@
 <resources>
+    <!-- App theme. Compose draws everything; this only sets the window before it does. -->
     <style name="Theme.Scrub" parent="android:Theme.DeviceDefault.DayNight">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/scrub_bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Dark status/nav bar icons on Chalk; values-night flips them to light -->
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
+    </style>
+
+    <!-- Launch screen (androidx.core:core-splashscreen). MainActivity swaps to Theme.Scrub. -->
+    <style name="Theme.Scrub.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/scrub_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_icon_bg</item>
+        <item name="postSplashScreenTheme">@style/Theme.Scrub</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
     </style>
 </resources>

@@ -1,37 +1,32 @@
 package com.scrub.app.ui
 
-import androidx.compose.animation.core.animateFloatAsState
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.scrub.app.ScrubViewModel
 import java.text.NumberFormat
 
 @Composable
 fun ScanScreen(vm: ScrubViewModel) {
-    val c = ScrubTheme.colors
-
     // Keep the screen awake while scanning
     val view = LocalView.current
     DisposableEffect(Unit) {
@@ -39,11 +34,27 @@ fun ScanScreen(vm: ScrubViewModel) {
         onDispose { view.keepScreenOn = false }
     }
 
-    val p = vm.progress
-    val animated by animateFloatAsState(p.fraction, label = "progress")
+    val found = vm.matches.filter { it.score >= vm.strictness }
+    ScanContent(
+        checked = vm.progress.done,
+        total = vm.progress.total,
+        found = found.size,
+        recent = found.takeLast(20).reversed().map { it.image.id to it.image.uri },
+        onStop = { if (found.isNotEmpty()) vm.stopScan() else vm.goHome() },
+    )
+}
+
+/** Stateless scan screen. [recent] is (id, uri) of the newest matches, newest first. */
+@Composable
+private fun ScanContent(
+    checked: Int,
+    total: Int,
+    found: Int,
+    recent: List<Pair<Long, Uri>>,
+    onStop: () -> Unit,
+) {
+    val c = ScrubTheme.colors
     val fmt = NumberFormat.getIntegerInstance()
-    val foundList = vm.matches.filter { it.score >= vm.strictness }
-    val found = foundList.size
 
     Column(
         Modifier
@@ -66,27 +77,15 @@ fun ScanScreen(vm: ScrubViewModel) {
 
         Spacer(Modifier.height(40.dp))
 
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text("${(animated * 100).toInt()}%", style = ScrubType.ScreenTitle, color = c.graphite)
-            Spacer(Modifier.weight(1f))
-            Text(
-                if (p.total == 0) "Getting ready" else "${fmt.format(p.done)} of ${fmt.format(p.total)} photos",
-                style = ScrubType.Small,
-                color = c.pencil,
-            )
-        }
-        Spacer(Modifier.height(16.dp))
-        LinearProgressIndicator(
-            progress = { animated },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp),
-            color = c.graphite,
-            trackColor = c.smudge,
-            strokeCap = StrokeCap.Round,
-            gapSize = 0.dp,
-            drawStopIndicator = {},
+        // Photos checked: counts up digit by digit
+        RollingNumber(checked, ScrubType.ScreenTitle.copy(fontSize = 40.sp, lineHeight = 48.sp), c.graphite)
+        Text(
+            if (total == 0) "Getting ready" else "of ${fmt.format(total)} photos",
+            style = ScrubType.Body,
+            color = c.pencil,
         )
+        Spacer(Modifier.height(16.dp))
+        EraserProgress(if (total == 0) 0f else checked.toFloat() / total)
 
         Spacer(Modifier.height(40.dp))
         Hairline()
@@ -100,12 +99,13 @@ fun ScanScreen(vm: ScrubViewModel) {
             },
             style = ScrubType.SectionTitle,
             color = c.graphite,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
         Spacer(Modifier.height(16.dp))
         Box(Modifier.height(64.dp)) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(foundList.takeLast(20).reversed(), key = { it.image.id }) {
-                    PhotoThumb(it.image.uri, Modifier.size(64.dp))
+                items(recent, key = { it.first }) { (_, uri) ->
+                    PhotoThumb(uri, Modifier.size(64.dp))
                 }
             }
         }
@@ -117,10 +117,35 @@ fun ScanScreen(vm: ScrubViewModel) {
             color = c.pencil,
         )
         Spacer(Modifier.height(16.dp))
-        SecondaryButton(
-            if (found > 0) "Stop and review" else "Stop",
-            onClick = { if (found > 0) vm.stopScan() else vm.goHome() },
-        )
+        SecondaryButton(if (found > 0) "Stop and review" else "Stop", onClick = onStop)
         Spacer(Modifier.height(24.dp))
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Previews
+// ---------------------------------------------------------------------------------------------
+
+@ScreenPreviews
+@Composable
+private fun Scan0Preview() = PreviewFrame {
+    ScanContent(checked = 0, total = 4812, found = 0, recent = emptyList(), onStop = {})
+}
+
+@ScreenPreviews
+@Composable
+private fun Scan40Preview() = PreviewFrame {
+    ScanContent(
+        checked = 1925, total = 4812, found = 3,
+        recent = (1L..3L).map { it to Uri.EMPTY }, onStop = {},
+    )
+}
+
+@ScreenPreviews
+@Composable
+private fun Scan100Preview() = PreviewFrame {
+    ScanContent(
+        checked = 4812, total = 4812, found = 12,
+        recent = (1L..6L).map { it to Uri.EMPTY }, onStop = {},
+    )
 }
