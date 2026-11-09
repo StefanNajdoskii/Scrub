@@ -1,5 +1,15 @@
 package com.scrub.app.ui
 
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,12 +35,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.NoEncryption
 import androidx.compose.material.icons.outlined.Shield
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -41,14 +53,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.scrub.app.RefFace
 import com.scrub.app.Screen
 import com.scrub.app.ScrubViewModel
 import com.scrub.app.auth.AuthUser
+import com.scrub.app.auth.SignInMethod
+
+/** Size of a reference face and of the add-photo slot, so they line up in one row. */
+private val FaceSize = 72.dp
+
+/** Circle size of the step indicators. */
+private val StepDot = 28.dp
 
 @Composable
 fun HomeScreen(
@@ -61,135 +88,169 @@ fun HomeScreen(
     onAccount: () -> Unit,
     showVerifyNote: Boolean,
     onDismissVerifyNote: () -> Unit,
+) = HomeContent(
+    references = vm.references,
+    hiddenCount = vm.vaultItems.size,
+    onAddPhoto = onAddPhoto,
+    onRemoveReference = vm::removeReference,
+    onScan = onScan,
+    onOpenHidden = { vm.screen = Screen.Vault },
+    permissionNote = permissionNote,
+    onPermissionNoteClick = onPermissionNoteClick,
+    user = user,
+    onAccount = onAccount,
+    showVerifyNote = showVerifyNote,
+    onDismissVerifyNote = onDismissVerifyNote,
+)
+
+/** Stateless Home, so it can be previewed without a ViewModel. */
+@Composable
+private fun HomeContent(
+    references: List<RefFace>,
+    hiddenCount: Int,
+    onAddPhoto: () -> Unit,
+    onRemoveReference: (RefFace) -> Unit,
+    onScan: () -> Unit,
+    onOpenHidden: () -> Unit,
+    permissionNote: String?,
+    onPermissionNoteClick: () -> Unit,
+    user: AuthUser?,
+    onAccount: () -> Unit,
+    showVerifyNote: Boolean,
+    onDismissVerifyNote: () -> Unit,
 ) {
     val c = ScrubTheme.colors
-    val hasRefs = vm.references.isNotEmpty()
+    val hasRefs = references.isNotEmpty()
+    val animationsOff = rememberAnimationsOff()
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Gutter),
-    ) {
-        Box(Modifier.fillMaxWidth()) {
+    // Content on top, footer pinned to the bottom when there's room; scrolls when there isn't.
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight)
+                .padding(horizontal = Gutter),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
             Column {
-                Spacer(Modifier.height(40.dp))
-                Wordmark()
-            }
-            if (user != null) {
-                Avatar(
-                    initial = user.initial,
-                    photoUrl = user.photoUrl,
-                    size = 40.dp,
-                    onClick = onAccount,
-                    onClickLabel = "Open account",
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 16.dp)
-                        .semantics { contentDescription = "Account: ${user.displayName}" },
-                )
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Clear someone out of your camera roll.",
-            style = ScrubType.Body,
-            color = c.pencil,
-        )
-        if (showVerifyNote) {
-            Spacer(Modifier.height(16.dp))
-            VerifyEmailNote(onDismiss = onDismissVerifyNote)
-        }
-
-        Spacer(Modifier.height(40.dp))
-
-        Step(number = 1, title = "Add photos of them", done = hasRefs) {
-            Text(
-                if (!hasRefs) "Pick a clear photo of them. You'll tap their face next."
-                else "Add 2 or 3 different photos of them for the most accurate results.",
-                style = ScrubType.Small,
-                color = c.pencil,
-            )
-            Spacer(Modifier.height(16.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(vm.references) { ref ->
-                    Box(Modifier.size(80.dp)) {
-                        FaceThumb(
-                            ref.thumbnail,
-                            contentDescription = "Their face",
-                            modifier = Modifier
-                                .size(72.dp)
-                                .align(Alignment.BottomStart),
-                        )
-                        RemoveFaceButton(
-                            onClick = { vm.removeReference(ref) },
-                            modifier = Modifier.align(Alignment.TopEnd),
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    Wordmark(Modifier.padding(top = 32.dp))
+                    Spacer(Modifier.weight(1f))
+                    if (user != null) {
+                        Avatar(
+                            initial = user.initial,
+                            photoUrl = user.photoUrl,
+                            size = 40.dp,
+                            onClick = onAccount,
+                            onClickLabel = "Open account",
+                            contentDescription = "Account",
+                            modifier = Modifier.padding(top = 16.dp),
                         )
                     }
                 }
-                item { AddFaceSlot(onAddPhoto, hasRefs) }
-            }
-        }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Clear someone out of your camera roll.",
+                    style = ScrubType.Body,
+                    color = c.pencil,
+                )
+                if (showVerifyNote) {
+                    Spacer(Modifier.height(16.dp))
+                    VerifyEmailNote(onDismiss = onDismissVerifyNote)
+                }
 
-        Step(number = 2, title = "Scan your photos", done = false) {
-            Text(
-                "Scrub looks through every photo on this phone for their face.",
-                style = ScrubType.Small,
-                color = c.pencil,
-            )
-            Spacer(Modifier.height(16.dp))
-            PrimaryButton(
-                text = if (hasRefs) "Scan my photos" else "Add a photo first",
-                onClick = onScan,
-                enabled = hasRefs,
-            )
-            if (permissionNote != null) {
-                Spacer(Modifier.height(16.dp))
-                Text(permissionNote, style = ScrubType.Small, color = c.graphite)
-                QuietButton(
-                    "Open settings",
-                    onClick = onPermissionNoteClick,
-                    modifier = Modifier.padding(top = 4.dp),
+                Spacer(Modifier.height(32.dp))
+
+                Step(
+                    number = 1,
+                    title = "Add photos of them",
+                    description = if (!hasRefs) "Pick a clear photo of them. You'll tap their face next."
+                    else "Add 2 or 3 different photos of them for the most accurate results.",
+                    state = if (hasRefs) StepState.Done else StepState.Active,
+                ) {
+                    Spacer(Modifier.height(16.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(references) { ref ->
+                            // 8dp extra on top/right leaves room for the remove "x".
+                            Box(Modifier.size(FaceSize + 8.dp)) {
+                                FaceThumb(
+                                    ref.thumbnail,
+                                    contentDescription = "Their face",
+                                    modifier = Modifier
+                                        .size(FaceSize)
+                                        .align(Alignment.BottomStart),
+                                )
+                                RemoveFaceButton(
+                                    onClick = { onRemoveReference(ref) },
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                )
+                            }
+                        }
+                        item { AddPhotoSlot(onAddPhoto) }
+                    }
+                }
+
+                Step(
+                    number = 2,
+                    title = "Scan your photos",
+                    description = "Scrub looks through every photo on this phone for their face.",
+                    state = if (hasRefs) StepState.Active else StepState.Upcoming,
+                ) {
+                    AnimatedVisibility(
+                        visible = hasRefs,
+                        enter = if (animationsOff) EnterTransition.None
+                        else fadeIn(tween(220)) + expandVertically(tween(220)),
+                        exit = if (animationsOff) ExitTransition.None
+                        else fadeOut(tween(150)) + shrinkVertically(tween(150)),
+                    ) {
+                        Column {
+                            Spacer(Modifier.height(16.dp))
+                            PrimaryButton(text = "Scan my photos", onClick = onScan)
+                        }
+                    }
+                    if (permissionNote != null) {
+                        Spacer(Modifier.height(16.dp))
+                        Text(permissionNote, style = ScrubType.Small, color = c.graphite)
+                        QuietButton(
+                            "Open settings",
+                            onClick = onPermissionNoteClick,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
+
+                Step(
+                    number = 3,
+                    title = "Review and remove",
+                    description = "You choose which photos go to the trash and which get hidden. " +
+                        "Nothing is removed until you confirm.",
+                    state = StepState.Upcoming,
+                    last = true,
                 )
             }
-        }
 
-        Step(number = 3, title = "Review and remove", done = false, last = true) {
-            Text(
-                "You choose which photos go to the trash and which get hidden. " +
-                    "Nothing is removed until you confirm.",
-                style = ScrubType.Small,
-                color = c.pencil,
-            )
-        }
-
-        Spacer(Modifier.height(32.dp))
-        Hairline()
-
-        val n = vm.vaultItems.size
-        QuietButton(
-            text = if (n == 0) "Hidden photos" else "Hidden photos ($n)",
-            icon = Icons.Outlined.VisibilityOff,
-            onClick = { vm.screen = Screen.Vault },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-        )
-
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Outlined.Shield, null, Modifier.size(16.dp), tint = c.pencil)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                "Your photos never leave this phone.",
-                style = ScrubType.Small,
-                color = c.pencil,
-            )
+            // Footer
+            Column(Modifier.padding(top = 32.dp)) {
+                Hairline()
+                HiddenPhotosRow(count = hiddenCount, onClick = onOpenHidden)
+                Hairline()
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 24.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.Shield, null, Modifier.size(16.dp), tint = c.pencil)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Your photos never leave this phone.",
+                        style = ScrubType.Small,
+                        color = c.pencil,
+                    )
+                }
+            }
         }
     }
 }
@@ -219,30 +280,37 @@ private fun VerifyEmailNote(onDismiss: () -> Unit) {
     }
 }
 
+private enum class StepState { Done, Active, Upcoming }
+
 /**
- * One numbered step. The number sits in a circle on the left, joined to the next step by a
- * hairline. A finished step shows an eraser-pink tick instead of its number.
+ * One numbered step. The indicator sits on the left, joined to the next step by a line:
+ * Graphite once this step is done (progress has reached the next one), Smudge otherwise.
+ * - Active: Graphite circle, Chalk number.
+ * - Done: Eraser circle with a check.
+ * - Upcoming: Smudge outline, and number, title and description all in Pencil.
  */
 @Composable
 private fun Step(
     number: Int,
     title: String,
-    done: Boolean,
+    description: String,
+    state: StepState,
     last: Boolean = false,
-    content: @Composable () -> Unit,
+    content: @Composable () -> Unit = {},
 ) {
     val c = ScrubTheme.colors
+    val textColor = if (state == StepState.Upcoming) c.pencil else c.graphite
+    val lineColor = if (state == StepState.Done) c.graphite else c.smudge
     Row(
         Modifier
             .fillMaxWidth()
             .drawBehind {
-                // Hairline joining this step's number to the next one
                 if (!last) {
-                    val x = 16.dp.toPx()
+                    val x = (StepDot / 2).toPx()
                     drawLine(
-                        color = c.smudge,
-                        start = Offset(x, 40.dp.toPx()),
-                        end = Offset(x, size.height - 8.dp.toPx()),
+                        color = lineColor,
+                        start = Offset(x, (StepDot + 6.dp).toPx()),
+                        end = Offset(x, size.height - 6.dp.toPx()),
                         strokeWidth = 1.dp.toPx(),
                     )
                 }
@@ -250,70 +318,143 @@ private fun Step(
     ) {
         Box(
             Modifier
-                .size(32.dp)
+                .padding(top = 2.dp)
+                .size(StepDot)
                 .clip(CircleShape)
                 .then(
-                    if (done) Modifier.background(c.eraser)
-                    else Modifier.border(1.dp, c.graphite, CircleShape)
+                    when (state) {
+                        StepState.Done -> Modifier.background(c.eraser)
+                        StepState.Active -> Modifier.background(c.graphite)
+                        StepState.Upcoming -> Modifier.border(1.dp, c.smudge, CircleShape)
+                    }
                 ),
             contentAlignment = Alignment.Center,
         ) {
-            if (done) {
-                Icon(Icons.Filled.Check, "Done", tint = c.onEraser, modifier = Modifier.size(18.dp))
-            } else {
-                Text("$number", style = ScrubType.Button, color = c.graphite)
+            when (state) {
+                // onEraser is the Graphite ink in both themes, so the check stays readable on pink.
+                StepState.Done ->
+                    Icon(Icons.Filled.Check, "Done", tint = c.onEraser, modifier = Modifier.size(16.dp))
+                StepState.Active ->
+                    Text("$number", style = ScrubType.Button.copy(fontSize = 14.sp), color = c.chalk)
+                StepState.Upcoming ->
+                    Text("$number", style = ScrubType.Button.copy(fontSize = 14.sp), color = c.pencil)
             }
         }
         Spacer(Modifier.width(16.dp))
         Column(
             Modifier
                 .weight(1f)
-                .padding(bottom = if (last) 0.dp else 32.dp)
+                .padding(bottom = if (last) 0.dp else 28.dp)
         ) {
             Text(
                 title,
                 style = ScrubType.SectionTitle,
-                color = c.graphite,
+                color = textColor,
                 modifier = Modifier
                     .heightIn(min = 32.dp)
                     .padding(top = 4.dp)
-                    .semantics { heading() },
+                    .semantics {
+                        heading()
+                        if (state == StepState.Upcoming) contentDescription = "$title, not available yet"
+                    },
             )
-            Spacer(Modifier.height(4.dp))
+            Text(description, style = ScrubType.Small, color = textColor)
             content()
         }
     }
 }
 
-/** Empty round slot for adding another face. */
+/**
+ * Dashed round slot for adding a photo, the same size as a reference face, with "Add photo"
+ * under it. The whole slot (circle + label) is one touch target.
+ */
 @Composable
-private fun AddFaceSlot(onClick: () -> Unit, hasRefs: Boolean) {
+private fun AddPhotoSlot(onClick: () -> Unit) {
     val c = ScrubTheme.colors
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
-    Box(Modifier.size(80.dp), contentAlignment = Alignment.BottomStart) {
+    Column(
+        Modifier
+            .clip(RoundedCornerShape(ButtonRadius))
+            .clickable(
+                interactionSource = source,
+                indication = ripple(color = c.graphite),
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .clearAndSetSemantics { contentDescription = "Add a photo of them" }
+            .padding(bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Same 8dp top offset as the face thumbnails, so the circles line up.
+        Spacer(Modifier.height(8.dp))
         Box(
             Modifier
-                .size(72.dp)
+                .size(FaceSize)
                 .focusRing(focused, c.graphite, null)
-                .clip(CircleShape)
-                .background(c.paper)
-                .border(1.dp, c.smudge, CircleShape)
-                .clickable(
-                    interactionSource = source,
-                    indication = ripple(color = c.graphite),
-                    role = Role.Button,
-                    onClickLabel = if (hasRefs) "Add another photo of them" else "Add a photo of them",
-                    onClick = onClick,
-                ),
+                .drawBehind {
+                    val w = 1.5.dp.toPx()
+                    drawCircle(
+                        color = c.pencil,
+                        radius = size.minDimension / 2f - w / 2f,
+                        style = Stroke(
+                            width = w,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())),
+                        ),
+                    )
+                },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = if (hasRefs) "Add another photo of them" else "Add a photo of them",
-                tint = c.graphite,
-            )
+            Icon(Icons.Filled.Add, contentDescription = null, tint = c.graphite)
         }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Add photo",
+            style = ScrubType.Small.copy(fontSize = 14.sp),
+            color = c.pencil,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(FaceSize),
+        )
+    }
+}
+
+/** Full-width 56dp row into the vault: icon, label, count (hidden at 0), chevron. */
+@Composable
+private fun HiddenPhotosRow(count: Int, onClick: () -> Unit) {
+    val c = ScrubTheme.colors
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .height(56.dp)
+            .focusRing(focused, c.graphite, ButtonRadius)
+            .clip(RoundedCornerShape(ButtonRadius))
+            .background(if (focused) c.smudge.copy(alpha = 0.5f) else Color.Transparent)
+            .clickable(
+                interactionSource = source,
+                indication = ripple(color = c.graphite),
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .semantics(mergeDescendants = true) {}
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.NoEncryption, null, Modifier.size(20.dp), tint = c.graphite)
+        Spacer(Modifier.width(16.dp))
+        Text("Hidden photos", style = ScrubType.Button, color = c.graphite, modifier = Modifier.weight(1f))
+        if (count > 0) {
+            Text(
+                "$count",
+                style = ScrubType.Body,
+                color = c.pencil,
+                modifier = Modifier.semantics { contentDescription = ScrubViewModel.plural(count) },
+            )
+            Spacer(Modifier.width(8.dp))
+        }
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(20.dp), tint = c.pencil)
     }
 }
 
@@ -348,3 +489,41 @@ private fun RemoveFaceButton(onClick: () -> Unit, modifier: Modifier = Modifier)
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Previews
+// ---------------------------------------------------------------------------------------------
+
+private val previewUser = AuthUser(
+    uid = "preview", name = "Ada Lovelace", email = "ada@example.com", photoUrl = null,
+    method = SignInMethod.Email, emailVerified = true,
+)
+
+private fun previewFace(): RefFace {
+    val bmp = Bitmap.createBitmap(72, 72, Bitmap.Config.ARGB_8888).apply { eraseColor(0xFFB9A89A.toInt()) }
+    return RefFace(bmp, FloatArray(0))
+}
+
+@Composable
+private fun HomePreview(references: List<RefFace>, hiddenCount: Int) = PreviewFrame {
+    HomeContent(
+        references = references, hiddenCount = hiddenCount,
+        onAddPhoto = {}, onRemoveReference = {}, onScan = {}, onOpenHidden = {},
+        permissionNote = null, onPermissionNoteClick = {},
+        user = previewUser, onAccount = {}, showVerifyNote = false, onDismissVerifyNote = {},
+    )
+}
+
+@Preview(name = "No faces", showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+private fun HomeNoFacesPreview() = HomePreview(references = emptyList(), hiddenCount = 0)
+
+@Preview(name = "One face", showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+private fun HomeOneFacePreview() = HomePreview(references = listOf(previewFace()), hiddenCount = 3)
+
+@Preview(
+    name = "Dark, one face", showBackground = true, widthDp = 360, heightDp = 640,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
+@Composable
+private fun HomeDarkPreview() = HomePreview(references = listOf(previewFace()), hiddenCount = 3)

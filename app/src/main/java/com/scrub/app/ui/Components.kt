@@ -311,6 +311,21 @@ fun IconAction(icon: ImageVector, contentDescription: String, onClick: () -> Uni
 // Wordmark
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * True when the system "Remove animations" setting is on (animator scale 0), or in previews.
+ * Skip decorative motion when it is.
+ */
+@Composable
+fun rememberAnimationsOff(): Boolean {
+    val context = LocalContext.current
+    val inPreview = LocalInspectionMode.current
+    return remember {
+        inPreview || runCatching {
+            Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+        }.getOrDefault(false)
+    }
+}
+
 /** The swipe plays once per app launch, not every time Home comes back. */
 private var wordmarkSwept = false
 
@@ -322,13 +337,7 @@ private var wordmarkSwept = false
 @Composable
 fun Wordmark(modifier: Modifier = Modifier, animate: Boolean = true) {
     val c = ScrubTheme.colors
-    val context = LocalContext.current
-    val inPreview = LocalInspectionMode.current
-    val animationsOff = remember {
-        inPreview || runCatching {
-            Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-        }.getOrDefault(false)
-    }
+    val animationsOff = rememberAnimationsOff()
     val progress = remember { Animatable(if (!animate || wordmarkSwept || animationsOff) 1f else 0f) }
     LaunchedEffect(Unit) {
         // A static wordmark doesn't use up the one sweep per launch.

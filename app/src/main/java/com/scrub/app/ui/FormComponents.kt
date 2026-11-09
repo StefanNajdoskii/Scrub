@@ -52,6 +52,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.error
@@ -221,8 +224,9 @@ fun LabeledDivider(text: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * Round account picture: the Google profile photo when there is one, otherwise the initial on
- * Eraser. Clickable when [onClick] is set.
+ * Round account picture: a Chalk circle with a 2dp Eraser ring and the initial in Graphite
+ * (Bricolage SemiBold), or the Google profile photo inside the same ring.
+ * Clickable when [onClick] is set.
  */
 @Composable
 fun Avatar(
@@ -232,6 +236,7 @@ fun Avatar(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
+    contentDescription: String? = null,
 ) {
     val c = ScrubTheme.colors
     val source = remember { MutableInteractionSource() }
@@ -241,8 +246,16 @@ fun Avatar(
             .size(size)
             .focusRing(focused, c.graphite, null)
             .clip(CircleShape)
-            .background(c.eraser)
-            .border(1.dp, c.smudge, CircleShape)
+            .background(c.chalk)
+            .then(
+                if (contentDescription != null) Modifier.clearAndSetSemantics {
+                    this.contentDescription = contentDescription
+                    if (onClick != null) {
+                        role = Role.Button
+                        onClick(label = onClickLabel) { onClick(); true }
+                    }
+                } else Modifier
+            )
             .then(
                 if (onClick != null) Modifier.clickable(
                     interactionSource = source,
@@ -256,8 +269,8 @@ fun Avatar(
     ) {
         Text(
             initial,
-            style = if (size >= 56.dp) ScrubType.ScreenTitle else ScrubType.Button,
-            color = c.onEraser,
+            style = if (size >= 56.dp) ScrubType.ScreenTitle else ScrubType.SectionTitle,
+            color = c.graphite,
         )
         if (photoUrl != null) {
             AsyncImage(
@@ -267,6 +280,12 @@ fun Avatar(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        // Ring on top, so it frames the photo too.
+        Box(
+            Modifier
+                .matchParentSize()
+                .border(2.dp, c.eraser, CircleShape)
+        )
     }
 }
 
