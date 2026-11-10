@@ -9,19 +9,51 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /** Which request is running, so the UI can show the spinner in the button that was pressed. */
 enum class AuthAction { Google, SignIn, Register, Reset, SignOut, Delete, Reauth }
 
-class AuthViewModel(app: Application) : AndroidViewModel(app) {
+/**
+ * Account state. Signing in is optional: someone who chose "Continue without an account" is a
+ * guest, remembered locally until they sign in.
+ *
+ * Firebase Auth is only touched once it's needed: at startup for people who aren't guests, or
+ * when a guest starts signing in. A guest's app never creates the FirebaseAuth instance, so it
+ * makes no Firebase Auth network calls.
+ */
+class AuthViewModel(private val app: Application) : AndroidViewModel(app) {
 
-    private val repo = AuthRepository(app)
     private val prefs = app.getSharedPreferences("account", Context.MODE_PRIVATE)
 
-    val currentUser: StateFlow<AuthUser?> = repo.currentUser
-    val restoring: StateFlow<Boolean> = repo.restoring
+    private val _currentUser = MutableStateFlow<AuthUser?>(null)
+    val currentUser: StateFlow<AuthUser?> = _currentUser.asStateFlow()
+
+    /** True until Firebase has restored the saved session at startup. Never true for guests. */
+    private val _restoring = MutableStateFlow(false)
+    val restoring: StateFlow<Boolean> = _restoring.asStateFlow()
+
+    /** Chose to use Scrub without an account. Cleared as soon as someone signs in. */
+    var isGuest by mutableStateOf(prefs.getBoolean(KEY_GUEST, false))
+        private set
+
+    private var repoOrNull: AuthRepository? = null
+
+    /** Creates the Firebase repository on first use and mirrors its signed-in user. */
+    private val repo: AuthRepository
+        get() = repoOrNull ?: AuthRepository(app).also { r ->
+            repoOrNull = r
+            _currentUser.value = r.currentUser.value
+            viewModelScope.launch {
+                r.currentUser.collect { user ->
+                    _currentUser.value = user
+                    if (user != null && isGuest) saveGuest(false)
+                }
+            }
+        }
 
     /** The running request, or null. While set, every auth button is disabled. */
     var pending by mutableStateOf<AuthAction?>(null)
@@ -46,7 +78,23 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
     private var verifyNoteDismissedFor by mutableStateOf(prefs.getString(KEY_VERIFY_DISMISSED, null))
 
     init {
-        viewModelScope.launch { repo.refresh() }
+        if (!isGuest) {
+            // Hold the splash until Firebase knows whether someone is signed in.
+            _restoring.value = true
+            val r = repo
+            viewModelScope.launch { r.restoring.collect { _restoring.value = it } }
+            viewModelScope.launch { r.refresh() }
+        }
+    }
+
+    fun continueAsGuest() {
+        clearMessages()
+        saveGuest(true)
+    }
+
+    private fun saveGuest(guest: Boolean) {
+        isGuest = guest
+        prefs.edit { putBoolean(KEY_GUEST, guest) }
     }
 
     fun showVerifyNote(user: AuthUser?): Boolean =
@@ -132,9 +180,12 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    override fun onCleared() = repo.close()
+    override fun onCleared() {
+        repoOrNull?.close()
+    }
 
     private companion object {
         const val KEY_VERIFY_DISMISSED = "verify_note_dismissed_uid"
+        const val KEY_GUEST = "guest"
     }
 }

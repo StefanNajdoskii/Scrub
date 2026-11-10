@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.MarkEmailRead
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,9 +43,17 @@ import com.scrub.app.auth.AuthViewModel
 
 private enum class AuthRoute { SignIn, CreateAccount, ForgotPassword }
 
-/** Signed-out part of the app: sign in, create account, reset password. */
+/**
+ * Signed-out part of the app: sign in, create account, reset password.
+ * [onBack] is set when a guest opened it from the Account screen; [onContinueWithoutAccount]
+ * when the user can choose to stay a guest (hidden for someone who already is one).
+ */
 @Composable
-fun AuthFlow(vm: AuthViewModel) {
+fun AuthFlow(
+    vm: AuthViewModel,
+    onBack: (() -> Unit)? = null,
+    onContinueWithoutAccount: (() -> Unit)? = null,
+) {
     val activity = LocalContext.current.findActivity()
     var route by rememberSaveable { mutableStateOf(AuthRoute.SignIn) }
     // Shared between the screens so an address typed once is prefilled everywhere.
@@ -56,6 +65,7 @@ fun AuthFlow(vm: AuthViewModel) {
     }
 
     BackHandler(enabled = route != AuthRoute.SignIn) { go(AuthRoute.SignIn) }
+    BackHandler(enabled = route == AuthRoute.SignIn && onBack != null) { onBack?.invoke() }
 
     val animationsOff = rememberAnimationsOff()
     Crossfade(
@@ -74,6 +84,8 @@ fun AuthFlow(vm: AuthViewModel) {
                 onSignIn = { password -> vm.signInWithEmail(email, password) },
                 onForgotPassword = { go(AuthRoute.ForgotPassword) },
                 onCreateAccount = { go(AuthRoute.CreateAccount) },
+                onBack = onBack,
+                onContinueWithoutAccount = onContinueWithoutAccount,
             )
             AuthRoute.CreateAccount -> CreateAccountScreen(
                 email = email,
@@ -147,6 +159,8 @@ fun SignInScreen(
     onSignIn: (password: String) -> Unit,
     onForgotPassword: () -> Unit,
     onCreateAccount: () -> Unit,
+    onBack: (() -> Unit)? = null,
+    onContinueWithoutAccount: (() -> Unit)? = null,
 ) {
     val c = ScrubTheme.colors
     val focusManager = LocalFocusManager.current
@@ -169,20 +183,35 @@ fun SignInScreen(
 
     FormColumn(
         bottom = {
-            Row(
+            Column(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Gutter, vertical = 16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("New here?", style = ScrubType.Body, color = c.pencil)
-                QuietButton("Create an account", onClick = onCreateAccount, enabled = idle)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("New here?", style = ScrubType.Body, color = c.pencil)
+                    QuietButton("Create an account", onClick = onCreateAccount, enabled = idle)
+                }
+                if (onContinueWithoutAccount != null) {
+                    QuietButton("Continue without an account", onClick = onContinueWithoutAccount, enabled = idle)
+                }
             }
         },
     ) {
+        if (onBack != null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconAction(Icons.AutoMirrored.Filled.ArrowBack, "Back", onBack)
+            }
+        }
         Column(Modifier.padding(horizontal = Gutter)) {
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(if (onBack != null) 8.dp else 40.dp))
             Wordmark()
             Spacer(Modifier.height(8.dp))
             Text("Clear one person out of your photos.", style = ScrubType.Body, color = c.pencil)
@@ -422,6 +451,18 @@ private fun SignInPreview() = PreviewFrame {
     SignInScreen(
         email = "", onEmailChange = {}, pending = null, error = null, errorFrom = null,
         onGoogle = {}, onSignIn = {}, onForgotPassword = {}, onCreateAccount = {},
+        onContinueWithoutAccount = {},
+    )
+}
+
+/** Opened by a guest from the Account screen: back button, no "Continue without an account". */
+@ScreenPreviews
+@Composable
+private fun SignInFromGuestPreview() = PreviewFrame {
+    SignInScreen(
+        email = "", onEmailChange = {}, pending = null, error = null, errorFrom = null,
+        onGoogle = {}, onSignIn = {}, onForgotPassword = {}, onCreateAccount = {},
+        onBack = {},
     )
 }
 

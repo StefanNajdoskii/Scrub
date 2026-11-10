@@ -92,25 +92,66 @@ fun PickFaceScreen(vm: ScrubViewModel, photo: Uri?, onPickAnother: () -> Unit) {
                     color = c.pencil,
                     modifier = Modifier.padding(horizontal = Gutter),
                 )
+                val weak = vm.weakCandidate
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
                     contentPadding = PaddingValues(Gutter),
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
+                    modifier = Modifier.weight(1f, fill = false),
                 ) {
                     itemsIndexed(vm.candidateFaces) { i, face ->
                         val thumb = face.thumbnail ?: return@itemsIndexed
-                        FaceThumb(
-                            thumb,
-                            contentDescription = "Face ${i + 1} of ${vm.candidateFaces.size}",
-                            onClick = { vm.chooseReference(face) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f),
-                        )
+                        Box {
+                            FaceThumb(
+                                thumb,
+                                contentDescription = "Face ${i + 1} of ${vm.candidateFaces.size}" +
+                                    if (face === weak) ", selected" else "",
+                                onClick = { vm.tapCandidate(face) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f),
+                            )
+                            if (face === weak) SelectionBadge(true, Modifier.align(Alignment.TopEnd))
+                        }
                     }
+                }
+                if (weak != null) {
+                    WeakFaceNote(
+                        onUse = { vm.chooseReference(weak) },
+                        onPickAnother = onPickAnother,
+                        modifier = Modifier.padding(horizontal = Gutter),
+                    )
                 }
             }
         }
     }
+}
+
+/**
+ * Shown under the faces when the tapped face is small, blurry or turned away. Matching still
+ * works with it, just less reliably, so the user can go ahead or pick a clearer photo.
+ */
+@Composable
+private fun WeakFaceNote(onUse: () -> Unit, onPickAnother: () -> Unit, modifier: Modifier = Modifier) {
+    val c = ScrubTheme.colors
+    Column(modifier.padding(bottom = 24.dp)) {
+        Text(
+            "This face is small or blurry, so matches may be less accurate. " +
+                "A clearer photo works better.",
+            style = ScrubType.Small,
+            color = c.pencil,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        Spacer(Modifier.height(16.dp))
+        PrimaryButton("Use this face", onUse)
+        Spacer(Modifier.height(8.dp))
+        SecondaryButton("Choose another photo", onPickAnother)
+    }
+}
+
+@ScreenPreviews
+@Composable
+private fun WeakFaceNotePreview() = PreviewFrame {
+    WeakFaceNote(onUse = {}, onPickAnother = {}, modifier = Modifier.padding(Gutter))
 }

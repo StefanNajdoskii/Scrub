@@ -13,6 +13,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +57,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -88,6 +90,7 @@ fun HomeScreen(
     onAccount: () -> Unit,
     showVerifyNote: Boolean,
     onDismissVerifyNote: () -> Unit,
+    onOpenMatchLab: (() -> Unit)? = null,
 ) = HomeContent(
     references = vm.references,
     hiddenCount = vm.vaultItems.size,
@@ -101,6 +104,7 @@ fun HomeScreen(
     onAccount = onAccount,
     showVerifyNote = showVerifyNote,
     onDismissVerifyNote = onDismissVerifyNote,
+    onOpenMatchLab = onOpenMatchLab,
 )
 
 /** Stateless Home, so it can be previewed without a ViewModel. */
@@ -118,6 +122,7 @@ private fun HomeContent(
     onAccount: () -> Unit,
     showVerifyNote: Boolean,
     onDismissVerifyNote: () -> Unit,
+    onOpenMatchLab: (() -> Unit)? = null,
 ) {
     val c = ScrubTheme.colors
     val hasRefs = references.isNotEmpty()
@@ -135,19 +140,28 @@ private fun HomeContent(
         ) {
             Column {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                    Wordmark(Modifier.padding(top = 32.dp))
+                    // Debug builds pass onOpenMatchLab: long-press the wordmark for the Match lab.
+                    Wordmark(
+                        Modifier
+                            .padding(top = 32.dp)
+                            .then(
+                                if (onOpenMatchLab == null) Modifier
+                                else Modifier.pointerInput(onOpenMatchLab) {
+                                    detectTapGestures(onLongPress = { onOpenMatchLab() })
+                                }
+                            )
+                    )
                     Spacer(Modifier.weight(1f))
-                    if (user != null) {
-                        Avatar(
-                            initial = user.initial,
-                            photoUrl = user.photoUrl,
-                            size = 40.dp,
-                            onClick = onAccount,
-                            onClickLabel = "Open account",
-                            contentDescription = "Account",
-                            modifier = Modifier.padding(top = 16.dp),
-                        )
-                    }
+                    // Guests get a person outline; it opens the "Not signed in" account screen.
+                    Avatar(
+                        initial = user?.initial,
+                        photoUrl = user?.photoUrl,
+                        size = 40.dp,
+                        onClick = onAccount,
+                        onClickLabel = "Open account",
+                        contentDescription = if (user != null) "Account" else "Account, not signed in",
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(

@@ -59,6 +59,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // BuildConfig.DEBUG gates the Match lab, so R8 drops it from release builds.
+        buildConfig = true
     }
 
     androidResources {
@@ -105,6 +107,7 @@ dependencies {
     // Staying on 1.x: 2.x drops 32-bit x86 and moves to the CompiledModel API.
     implementation("com.google.ai.edge.litert:litert:1.4.2")
 
+    testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
 

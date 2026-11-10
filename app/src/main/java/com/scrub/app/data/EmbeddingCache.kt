@@ -1,6 +1,8 @@
 package com.scrub.app.data
 
 import com.scrub.app.face.FaceEmbedder
+import com.scrub.app.face.FaceQuality
+import com.scrub.app.face.FaceRecord
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.DataInputStream
@@ -10,11 +12,12 @@ import java.io.File
 /**
  * Remembers the face fingerprints found in each photo, so a second scan (for example after
  * adding another reference photo) only has to look at new or edited pictures.
- * Stored privately in the app's own storage.
+ * Each face is stored with its quality numbers, so the matching filters can change without a
+ * rescan. Stored privately in the app's own storage.
  */
 class EmbeddingCache(private val file: File) {
 
-    private class Entry(val dateModified: Long, val faces: List<FloatArray>)
+    private class Entry(val dateModified: Long, val faces: List<FaceRecord>)
 
     private val map = HashMap<Long, Entry>()
     private var loaded = false
@@ -34,7 +37,14 @@ class EmbeddingCache(private val file: File) {
                     val modified = input.readLong()
                     val faceCount = input.readInt()
                     val faces = List(faceCount) {
-                        FloatArray(FaceEmbedder.EMBEDDING_SIZE) { input.readFloat() }
+                        val embedding = FloatArray(FaceEmbedder.EMBEDDING_SIZE) { input.readFloat() }
+                        val quality = FaceQuality(
+                            sizePx = input.readInt(),
+                            yaw = input.readFloat(),
+                            roll = input.readFloat(),
+                            sharpness = input.readFloat(),
+                        )
+                        FaceRecord(embedding, quality)
                     }
                     map[id] = Entry(modified, faces)
                 }
@@ -45,11 +55,11 @@ class EmbeddingCache(private val file: File) {
     }
 
     @Synchronized
-    fun get(id: Long, dateModified: Long): List<FloatArray>? =
+    fun get(id: Long, dateModified: Long): List<FaceRecord>? =
         map[id]?.takeIf { it.dateModified == dateModified }?.faces
 
     @Synchronized
-    fun put(id: Long, dateModified: Long, faces: List<FloatArray>) {
+    fun put(id: Long, dateModified: Long, faces: List<FaceRecord>) {
         map[id] = Entry(dateModified, faces)
         dirty = true
     }
@@ -71,7 +81,13 @@ class EmbeddingCache(private val file: File) {
                 out.writeLong(id)
                 out.writeLong(e.dateModified)
                 out.writeInt(e.faces.size)
-                for (f in e.faces) for (v in f) out.writeFloat(v)
+                for (f in e.faces) {
+                    for (v in f.embedding) out.writeFloat(v)
+                    out.writeInt(f.quality.sizePx)
+                    out.writeFloat(f.quality.yaw)
+                    out.writeFloat(f.quality.roll)
+                    out.writeFloat(f.quality.sharpness)
+                }
             }
         }
         tmp.renameTo(file)
@@ -86,6 +102,10 @@ class EmbeddingCache(private val file: File) {
     }
 
     private companion object {
-        const val VERSION = 1
+        /**
+         * 1: embedding only. 2: straightened + flip-averaged embeddings, plus quality numbers.
+         * A cache with another version is ignored and rebuilt by the next scan.
+         */
+        const val VERSION = 2
     }
 }

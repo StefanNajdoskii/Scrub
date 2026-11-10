@@ -1,5 +1,6 @@
 package com.scrub.app.ui
 
+import androidx.compose.material.icons.outlined.Person
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -225,12 +226,13 @@ fun LabeledDivider(text: String, modifier: Modifier = Modifier) {
 
 /**
  * Round account picture: a Chalk circle with a 2dp Eraser ring and the initial in Graphite
- * (Bricolage SemiBold), or the Google profile photo inside the same ring.
+ * (Bricolage SemiBold), or the Google profile photo inside the same ring. A null [initial]
+ * means nobody is signed in: a person outline instead.
  * Clickable when [onClick] is set.
  */
 @Composable
 fun Avatar(
-    initial: String,
+    initial: String?,
     photoUrl: String?,
     size: Dp,
     modifier: Modifier = Modifier,
@@ -267,11 +269,15 @@ fun Avatar(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            initial,
-            style = if (size >= 56.dp) ScrubType.ScreenTitle else ScrubType.SectionTitle,
-            color = c.graphite,
-        )
+        if (initial == null) {
+            Icon(Icons.Outlined.Person, contentDescription = null, tint = c.graphite, modifier = Modifier.size(size * 0.55f))
+        } else {
+            Text(
+                initial,
+                style = if (size >= 56.dp) ScrubType.ScreenTitle else ScrubType.SectionTitle,
+                color = c.graphite,
+            )
+        }
         if (photoUrl != null) {
             AsyncImage(
                 model = photoUrl,

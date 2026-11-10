@@ -2,7 +2,12 @@ package com.scrub.app.face
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Matrix
+import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.Shader
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -14,14 +19,18 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-/** One face found in a picture. [embedding] is an L2-normalised 128-number "face fingerprint". */
+/** One face found in a picture: where it is, its fingerprint and quality, and optionally its crop. */
 class DetectedFace(
     val box: Rect,
-    val embedding: FloatArray,
+    val record: FaceRecord,
     val thumbnail: Bitmap?,
-)
+) {
+    val embedding: FloatArray get() = record.embedding
+    val quality: FaceQuality get() = record.quality
+}
 
 /**
  * Turns a cropped face into a 128-dimensional embedding using FaceNet (assets/facenet.tflite).
@@ -45,12 +54,47 @@ class FaceEmbedder(context: Context) : Closeable {
         interpreter = Interpreter(model, Interpreter.Options().setNumThreads(4))
     }
 
+    /** Raw model output for [face], resized to 160x160 and L2-normalised. */
     @Synchronized
     fun embed(face: Bitmap): FloatArray {
+        loadPixels(face)
+        return run()
+    }
+
+    /**
+     * Embedding of [face] averaged with the embedding of its mirror image, then L2-normalised.
+     * Faces are roughly symmetric, so this cancels some of the noise from lighting and pose
+     * at the cost of a second model run. This is what scanning and reference faces use.
+     */
+    @Synchronized
+    fun embedWithFlip(face: Bitmap): FloatArray {
+        loadPixels(face)
+        val a = run()
+        mirrorPixels()
+        val b = run()
+        for (i in a.indices) a[i] += b[i]
+        return FaceMath.normalize(a)
+    }
+
+    private fun loadPixels(face: Bitmap) {
         val scaled = Bitmap.createScaledBitmap(face, SIZE, SIZE, true)
         scaled.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE)
         if (scaled !== face) scaled.recycle()
+    }
 
+    private fun mirrorPixels() {
+        for (y in 0 until SIZE) {
+            var l = y * SIZE
+            var r = l + SIZE - 1
+            while (l < r) {
+                val t = pixels[l]; pixels[l] = pixels[r]; pixels[r] = t
+                l++; r--
+            }
+        }
+    }
+
+    /** Runs FaceNet on [pixels] and returns a new normalised vector. */
+    private fun run(): FloatArray {
         // Per-image standardisation (what this FaceNet model was trained with)
         var sum = 0.0
         for (i in pixels.indices) {
@@ -77,7 +121,7 @@ class FaceEmbedder(context: Context) : Closeable {
         input.rewind()
 
         interpreter.run(input, output)
-        return normalize(output[0].copyOf())
+        return FaceMath.normalize(output[0].copyOf())
     }
 
     override fun close() = interpreter.close()
@@ -86,21 +130,54 @@ class FaceEmbedder(context: Context) : Closeable {
         const val SIZE = 160
         const val EMBEDDING_SIZE = 128
 
-        fun normalize(v: FloatArray): FloatArray {
-            var s = 0f
-            for (x in v) s += x * x
-            val len = sqrt(s)
-            if (len > 0f) for (i in v.indices) v[i] /= len
-            return v
-        }
+        fun normalize(v: FloatArray): FloatArray = FaceMath.normalize(v)
 
         /** Cosine similarity of two normalised vectors: 1 = identical, 0 = unrelated. */
-        fun similarity(a: FloatArray, b: FloatArray): Float {
-            var s = 0f
-            for (i in a.indices) s += a[i] * b[i]
-            return s
-        }
+        fun similarity(a: FloatArray, b: FloatArray): Float = FaceMath.similarity(a, b)
     }
+}
+
+/** Cuts faces out of a photo, straightened so the eyes are level. */
+object FaceAligner {
+
+    /** Crops are rendered at most this big; FaceNet only sees 160x160 anyway. */
+    private const val MAX_CROP = 480
+
+    /** Square margin around ML Kit's face box. */
+    const val MARGIN = 1.15f
+
+    /**
+     * Square crop of side [side] centred on ([cx], [cy]) in [src], rotated by [rollDegrees]
+     * clockwise so a face that ML Kit reports as tilted by that much (headEulerAngleZ,
+     * positive = counter-clockwise) comes out upright. Pixels outside [src] repeat its edge,
+     * so faces near a border don't get hard black corners.
+     */
+    fun straightenedCrop(src: Bitmap, cx: Float, cy: Float, side: Float, rollDegrees: Float): Bitmap {
+        val out = min(side.roundToInt(), MAX_CROP).coerceAtLeast(1)
+        val scale = out / side
+        val m = Matrix().apply {
+            setTranslate(-cx, -cy)
+            // Android rotates clockwise for positive degrees (y points down).
+            postRotate(rollDegrees)
+            postScale(scale, scale)
+            postTranslate(out / 2f, out / 2f)
+        }
+        val shader = BitmapShader(src, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { setLocalMatrix(m) }
+        val paint = Paint(Paint.FILTER_BITMAP_FLAG).apply { this.shader = shader }
+        val dst = Bitmap.createBitmap(out, out, Bitmap.Config.ARGB_8888)
+        Canvas(dst).drawRect(0f, 0f, out.toFloat(), out.toFloat(), paint)
+        return dst
+    }
+
+    /** The crop the scanner uses for an ML Kit face box. */
+    fun cropFor(src: Bitmap, box: Rect, rollDegrees: Float): Bitmap =
+        straightenedCrop(
+            src,
+            box.exactCenterX(),
+            box.exactCenterY(),
+            max(box.width(), box.height()) * MARGIN,
+            rollDegrees,
+        )
 }
 
 /** Finds faces in a bitmap (ML Kit) and fingerprints each one (FaceNet). Runs fully on-device. */
@@ -114,34 +191,30 @@ class FaceFinder(context: Context) : Closeable {
     )
     private val embedder = FaceEmbedder(context)
 
+    /**
+     * Every face in [bitmap], each with an embedding and quality numbers. Low-quality faces are
+     * kept (and cached) too; matching skips them via [FaceQuality.usable], so the rules can
+     * change later without rescanning.
+     */
     suspend fun findFaces(bitmap: Bitmap, withThumbnails: Boolean = false): List<DetectedFace> {
         val faces = detector.process(InputImage.fromBitmap(bitmap, 0)).await()
         return faces.mapNotNull { face ->
-            val crop = cropSquare(bitmap, face.boundingBox) ?: return@mapNotNull null
-            val embedding = embedder.embed(crop)
+            val box = face.boundingBox
+            if (max(box.width(), box.height()) < MIN_FACE_PX) return@mapNotNull null
+            val roll = face.headEulerAngleZ
+            val crop = FaceAligner.cropFor(bitmap, box, roll)
+            val quality = FaceQuality(
+                sizePx = box.width(),
+                yaw = face.headEulerAngleY,
+                roll = roll,
+                sharpness = FaceQuality.sharpnessOf(crop),
+            )
+            val embedding = embedder.embedWithFlip(crop)
             val thumb = if (withThumbnails) crop else {
                 crop.recycle(); null
             }
-            DetectedFace(face.boundingBox, embedding, thumb)
+            DetectedFace(box, FaceRecord(embedding, quality), thumb)
         }
-    }
-
-    /** Square crop around the face with a little margin, clamped to the image. */
-    private fun cropSquare(src: Bitmap, box: Rect): Bitmap? {
-        val side = (max(box.width(), box.height()) * 1.15f).toInt()
-        if (side < MIN_FACE_PX) return null
-        val cx = box.centerX()
-        val cy = box.centerY()
-        val left = max(0, cx - side / 2)
-        val top = max(0, cy - side / 2)
-        val right = min(src.width, cx + side / 2)
-        val bottom = min(src.height, cy + side / 2)
-        val w = right - left
-        val h = bottom - top
-        if (w < MIN_FACE_PX || h < MIN_FACE_PX) return null
-        val crop = Bitmap.createBitmap(src, left, top, w, h)
-        // createBitmap can hand back the source itself; never let callers recycle that
-        return if (crop === src) src.copy(Bitmap.Config.ARGB_8888, false) else crop
     }
 
     override fun close() {
@@ -150,6 +223,7 @@ class FaceFinder(context: Context) : Closeable {
     }
 
     companion object {
-        private const val MIN_FACE_PX = 40
+        /** Below this there's nothing worth fingerprinting, even for the cache. */
+        private const val MIN_FACE_PX = 24
     }
 }

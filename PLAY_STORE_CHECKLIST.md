@@ -59,11 +59,15 @@ Drafts are marked **DRAFT**. Read them and adjust before using them.
       **at least 12 testers opted in for 14 days in a row** before they can apply for
       production. Create a Google Group or email list, share the opt-in link, and make sure
       testers stay opted in for the full 14 days.
-- [ ] **App access**: sign-in is required, so reviewers need a working account. Create a
-      dedicated email/password account in the app (e.g. `scrub.review@yourdomain`). Enter it
+- [ ] **App access**: signing in is optional, and every feature (scan, review, trash, Hidden
+      photos) works without an account via "Continue without an account". Still give reviewers
+      a test account for the account features (sign in, sign out, delete account): create a
+      dedicated email/password account in the app (e.g. `scrub.review@yourdomain`) and enter it
       under *App content → App access → All or some functionality is restricted*, with:
-      "Sign in with the email and password below. To try the main feature, add a few photos
-      of one person to the device gallery first."
+      "The whole app works without an account: on the first screen, tap 'Continue without an
+      account'. To review the account features (Account screen, Delete account), sign in with
+      the email and password below. To try the main feature, add a few photos of one person
+      to the device gallery first."
 - [ ] Ads: **No ads**.
 - [ ] Target audience: recommended **18 and over** (or 16+). This keeps the app out of the
       Families programme; it's a photo-management tool, not made for children.
@@ -138,9 +142,10 @@ Fill in the bracketed parts.
 >
 > ## Your account
 >
-> Scrub requires an account. Accounts are provided by Firebase Authentication, a service of
-> Google LLC. Depending on how you sign in, the following is sent to Firebase
-> Authentication:
+> An account is optional: you can use all of Scrub without one. If you choose to sign in,
+> accounts are provided by Firebase Authentication, a service of Google LLC. Depending on how
+> you sign in, the following is sent to Firebase Authentication. If you don't sign in, nothing
+> is sent:
 >
 > - **Email and password:** your name, email address and password. The password is stored
 >   by Firebase in hashed form; we can't see it.
@@ -223,9 +228,13 @@ add device-related data types).
 | Is all of the user data collected by your app encrypted in transit? | **Yes** |
 | Do you provide a way for users to request that their data is deleted? | **Yes** (in-app + web URL from section 6) |
 
+Account data is only collected if the user chooses to sign in; the whole app works without an
+account. So mark every data type below as **Optional** ("users can choose whether this data is
+collected"), not Required.
+
 **Data types collected** (all: *Collected* yes, *Shared* **no**, *Processed ephemerally* no,
-*Required*, purpose **Account management**, plus **Fraud prevention, security, and compliance**
-for user IDs):
+**Optional**, purpose **Account management**, plus **Fraud prevention, security, and
+compliance** for user IDs):
 
 | Category | Data type | Notes |
 |---|---|---|
@@ -279,8 +288,8 @@ Expected result: Everyone / PEGI 3 / USK 0.
 >
 > YOUR PHOTOS NEVER LEAVE YOUR PHONE
 > All face detection and matching happens on your device. Your photos, face data and hidden
-> photos are never uploaded, synced or shared. The internet is used only to sign in to
-> your account.
+> photos are never uploaded, synced or shared. No account needed: the internet is used only
+> if you choose to sign in.
 >
 > YOU STAY IN CONTROL
 > • Nothing is removed until you confirm, and Android asks for your permission too.

@@ -18,8 +18,9 @@ import com.scrub.app.data.GalleryImage
 import com.scrub.app.data.Vault
 import com.scrub.app.data.VaultItem
 import com.scrub.app.face.DetectedFace
-import com.scrub.app.face.FaceEmbedder
 import com.scrub.app.face.FaceFinder
+import com.scrub.app.face.FaceRecord
+import com.scrub.app.face.ReferenceSet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -35,6 +36,9 @@ enum class Screen { Home, PickFace, Scanning, Results, Done, Vault }
 class RefFace(val thumbnail: Bitmap, val embedding: FloatArray)
 
 class Match(val image: GalleryImage, val score: Float)
+
+/** A scanned photo with at least one usable face. Only collected in debug builds (Match lab). */
+class ScannedPhoto(val image: GalleryImage, val faces: List<FaceRecord>)
 
 data class ScanProgress(val done: Int = 0, val total: Int = 0) {
     val fraction: Float get() = if (total == 0) 0f else done.toFloat() / total
@@ -55,6 +59,9 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
     var pickLoading by mutableStateOf(false)
     var candidateFaces by mutableStateOf<List<DetectedFace>>(emptyList())
 
+    /** A tapped face that's small, blurry or turned away, waiting for "Use this face". */
+    var weakCandidate by mutableStateOf<DetectedFace?>(null)
+
     var progress by mutableStateOf(ScanProgress())
     val matches = mutableStateListOf<Match>()
 
@@ -67,6 +74,13 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
     var doneBody by mutableStateOf("")
 
     var vaultItems by mutableStateOf<List<VaultItem>>(emptyList())
+
+    /** Debug builds only: the last scan's photos and references, for the Match lab. */
+    var labPhotos by mutableStateOf<List<ScannedPhoto>>(emptyList())
+        private set
+    var labReferences by mutableStateOf<ReferenceSet?>(null)
+        private set
+    private val labBuffer = ArrayList<ScannedPhoto>()
 
     private var scanJob: Job? = null
     private var pendingVault: List<Pair<GalleryImage, VaultItem>> = emptyList()
@@ -97,6 +111,7 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
         screen = Screen.PickFace
         pickLoading = true
         candidateFaces = emptyList()
+        weakCandidate = null
         viewModelScope.launch {
             val faces: List<DetectedFace> = withContext(Dispatchers.Default) {
                 val bmp = Gallery.decode(resolver, uri, 1600) ?: return@withContext emptyList<DetectedFace>()
@@ -107,10 +122,16 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** A face was tapped: a clear one is used straight away, a weak one waits for confirmation. */
+    fun tapCandidate(face: DetectedFace) {
+        if (face.quality.goodReference) chooseReference(face) else weakCandidate = face
+    }
+
     fun chooseReference(face: DetectedFace) {
         val thumb = face.thumbnail ?: return
         references += RefFace(thumb, face.embedding)
         candidateFaces = emptyList()
+        weakCandidate = null
         screen = Screen.Home
     }
 
@@ -127,7 +148,12 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
         deselected = emptySet()
         progress = ScanProgress()
         screen = Screen.Scanning
-        val refs = references.map { it.embedding }
+        val refs = ReferenceSet(references.map { it.embedding })
+        if (BuildConfig.DEBUG) {
+            labBuffer.clear()
+            labPhotos = emptyList()
+            labReferences = refs
+        }
 
         scanJob = viewModelScope.launch {
             try {
@@ -148,8 +174,10 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
 
                     val all = known.mapNotNull { (img, f) -> f?.let { img to it } } + fresh
                     for ((img, faces) in all) {
-                        val score = bestScore(faces, refs)
+                        // Null when the photo has no usable face (too small, turned, blurry)
+                        val score = refs.photoScore(faces) ?: continue
                         if (score >= MIN_SCORE) matches += Match(img, score)
+                        if (BuildConfig.DEBUG) labBuffer += ScannedPhoto(img, faces)
                     }
                     progress = ScanProgress(progress.done + chunk.size, images.size)
 
@@ -172,30 +200,22 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun showResults() {
+        if (BuildConfig.DEBUG) labPhotos = labBuffer.toList()
         val sorted = matches.sortedByDescending { it.score }
         matches.clear()
         matches.addAll(sorted)
         screen = Screen.Results
     }
 
-    private suspend fun fingerprint(img: GalleryImage): List<FloatArray> {
+    private suspend fun fingerprint(img: GalleryImage): List<FaceRecord> {
         val bmp = Gallery.decode(resolver, img.uri, 1024) ?: return emptyList()
         return try {
-            finder.findFaces(bmp).map { it.embedding }
+            finder.findFaces(bmp).map { it.record }
         } catch (t: Throwable) {
             emptyList()
         } finally {
             bmp.recycle()
         }
-    }
-
-    private fun bestScore(faces: List<FloatArray>, refs: List<FloatArray>): Float {
-        var best = -1f
-        for (f in faces) for (r in refs) {
-            val s = FaceEmbedder.similarity(f, r)
-            if (s > best) best = s
-        }
-        return best
     }
 
     // ---------- acting on matches ----------
@@ -308,8 +328,15 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     companion object {
+        /**
+         * Strictness slider range. Straightened, flip-averaged embeddings (cache v2) score the
+         * same person higher than before (emulator test pairs: 0.74 -> 0.88 and 0.82 -> 0.83)
+         * while different people stay below ~0.28, so the top end moved from 0.85 to 0.90 to
+         * leave room for very strict settings. The bottom stays at 0.35, well above
+         * different-person scores.
+         */
         const val MIN_SCORE = 0.35f
-        const val MAX_SCORE = 0.85f
+        const val MAX_SCORE = 0.90f
         const val DEFAULT_STRICTNESS = 0.55f
         private const val PARALLEL = 4
 

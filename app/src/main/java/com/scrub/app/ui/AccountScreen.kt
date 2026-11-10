@@ -167,6 +167,32 @@ fun AccountScreen(
     }
 }
 
+/** Account screen for someone using Scrub without an account. */
+@Composable
+fun GuestAccountScreen(onBack: () -> Unit, onSignIn: () -> Unit) {
+    val c = ScrubTheme.colors
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        TopBar("Not signed in", onBack = onBack)
+        Column(Modifier.padding(horizontal = Gutter)) {
+            Spacer(Modifier.height(16.dp))
+            Avatar(initial = null, photoUrl = null, size = 64.dp)
+            Spacer(Modifier.height(24.dp))
+            Text(
+                "Scrub works fully without an account. Signing in is optional.",
+                style = ScrubType.Body,
+                color = c.pencil,
+            )
+            Spacer(Modifier.height(32.dp))
+            PrimaryButton("Sign in or create account", onClick = onSignIn)
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
 @Composable
 private fun DetailRow(label: String, value: String) {
     val c = ScrubTheme.colors
@@ -277,4 +303,10 @@ private fun AccountGooglePreview() = PreviewFrame {
         onBack = {}, onSignOut = {}, onDelete = {}, onReauthWithPassword = {},
         onReauthWithGoogle = {}, onCancelReauth = {},
     )
+}
+
+@ScreenPreviews
+@Composable
+private fun GuestAccountPreview() = PreviewFrame {
+    GuestAccountScreen(onBack = {}, onSignIn = {})
 }

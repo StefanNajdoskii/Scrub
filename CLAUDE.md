@@ -7,7 +7,8 @@ phone and trashes them or hides them in a private on-device vault.
 
 - The app may use the internet **only for Firebase Authentication** (email/password and
   "Continue with Google" via Credential Manager), plus loading the signed-in user's Google
-  profile photo for the avatar.
+  profile photo for the avatar, and only when the user signs in. Guests make no Firebase Auth
+  calls: `AuthViewModel` doesn't create `AuthRepository` (and so `FirebaseAuth`) for them.
 - Photos, face fingerprints (`faces.bin`) and the vault must **never** be uploaded or synced.
   Face detection and recognition run on the device (ML Kit + bundled FaceNet).
 - Do not add Firestore, Storage, Realtime Database, Analytics, Crashlytics, Remote Config,
@@ -17,11 +18,16 @@ phone and trashes them or hides them in a private on-device vault.
 
 ## Accounts
 
-- Sign-in is required. `AppRoot` in `MainActivity.kt` shows a wordmark while Firebase restores
-  the session, the auth screens (`ui/AuthScreens.kt`) when signed out, otherwise the app.
+- Signing in is optional. "Continue without an account" on the sign-in screen sets a local
+  guest flag (`AuthViewModel.isGuest`, prefs file `account`); guests go straight to Home on
+  later launches and can use everything. The flag is cleared when they sign in. Signing out or
+  deleting the account returns to the sign-in screen, not to guest mode.
+- `AppRoot` in `MainActivity.kt` shows a wordmark while Firebase restores the session (never
+  for guests), the auth screens (`ui/AuthScreens.kt`) when signed out and not a guest,
+  otherwise the app. A guest's avatar opens `GuestAccountScreen` ("Not signed in").
 - `auth/AuthViewModel.kt` owns auth UI state. `ScrubViewModel` (scanning, trash, vault) knows
   nothing about accounts; on sign out `AppRoot` only calls its existing `goHome()`/`startOver()`.
-- Hidden photos stay on the device after sign out and are only reachable while signed in.
+- Hidden photos stay on the device after sign out, and work the same for guests.
 - Deleting the account deletes the Firebase user only, never photos or the vault.
 - Library versions: Kotlin is 2.2.0, so Firebase BoM is pinned to 34.19.0 and googleid to
   1.2.0. Newer releases are built with Kotlin 2.4 metadata and fail to compile.
@@ -46,5 +52,13 @@ Every screen must work in light and dark; add `@ScreenPreviews` previews for new
   upgrading any library with native code, check alignment in the APK Analyzer or with
   `zipalign -c -P 16 -v 4 app.apk`.
 - `EmbeddingRegressionTest` (androidTest) pins FaceNet output to the original runtime's
-  values. Run it after touching the ML runtime or `FaceEmbedder`.
+  values. Run it after touching the ML runtime or `FaceEmbedder`. `FacePipelineTest` covers
+  straightening + flip averaging. `GalleryEvalTest` is a dev tool that only runs with
+  `-e eval <tag>` and dumps gallery similarities to the app's private cache.
+- Face pipeline changes that alter embeddings must bump `EmbeddingCache.VERSION` (faces get
+  re-fingerprinted once). Quality rules live in `face/FaceQuality.kt` and apply at match time.
+- The Match lab (`ui/MatchLabScreen.kt`, long-press the wordmark on Home) is debug-only: every
+  entry point sits behind `BuildConfig.DEBUG` so R8 strips it. After touching it, check the
+  release `mapping.txt` has no `MatchLab` classes.
+- `connectedAndroidTest` uninstalls the app afterwards, which signs out and wipes `faces.bin`.
 - Play submission steps: `PLAY_STORE_CHECKLIST.md`.

@@ -56,11 +56,13 @@ import com.scrub.app.auth.AuthUser
 import com.scrub.app.auth.AuthViewModel
 import com.scrub.app.ui.AccountScreen
 import com.scrub.app.ui.AuthFlow
+import com.scrub.app.ui.GuestAccountScreen
 import com.scrub.app.ui.StartupScreen
 import com.scrub.app.ui.findActivity
 import com.scrub.app.ui.BusyOverlay
 import com.scrub.app.ui.DoneScreen
 import com.scrub.app.ui.HomeScreen
+import com.scrub.app.ui.MatchLabScreen
 import com.scrub.app.ui.PickFaceScreen
 import com.scrub.app.ui.ResultsScreen
 import com.scrub.app.ui.ScanScreen
@@ -134,9 +136,10 @@ private fun hasPartialAccess(ctx: Context) =
     Build.VERSION.SDK_INT >= 34 && granted(ctx, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
 
 /**
- * Sign-in gate. Shows the wordmark while Firebase restores the saved session, the auth screens
- * when nobody is signed in, and the app otherwise. Hidden photos stay on the device after sign
- * out but can only be opened from inside the app, i.e. while signed in.
+ * Account gate. Signing in is optional. Shows the wordmark while Firebase restores a saved
+ * session (never for guests), the auth screens when nobody is signed in and the user hasn't
+ * chosen "Continue without an account", and the app otherwise. Guests and signed-in users get
+ * the same app, Hidden photos included.
  */
 @Composable
 fun AppRoot(
@@ -146,6 +149,9 @@ fun AppRoot(
     val restoring by authVm.restoring.collectAsStateWithLifecycle()
     val user by authVm.currentUser.collectAsStateWithLifecycle()
     var showAccount by rememberSaveable { mutableStateOf(false) }
+    // A guest who tapped "Sign in or create account". The guest flag stays until they sign in.
+    var guestSigningIn by rememberSaveable { mutableStateOf(false) }
+    val isGuest = authVm.isGuest
     val context = LocalContext.current
     // First-run introduction, shown once per device after the first sign-in.
     var introDone by remember { mutableStateOf(IntroPrefs.isDone(context)) }
@@ -159,6 +165,11 @@ fun AppRoot(
         if (lastUid != null && uid != lastUid) {
             scrubVm.goHome()
             scrubVm.startOver()
+            showAccount = false
+        }
+        // A guest who just signed in keeps their session and lands on Home.
+        if (uid != null && guestSigningIn) {
+            guestSigningIn = false
             showAccount = false
         }
         lastUid = uid
@@ -175,12 +186,32 @@ fun AppRoot(
             val signedIn = user
             when {
                 restoring -> StartupScreen()
-                signedIn == null -> AuthFlow(authVm)
+                signedIn == null && isGuest && guestSigningIn -> AuthFlow(
+                    authVm,
+                    onBack = {
+                        authVm.clearMessages()
+                        guestSigningIn = false
+                    },
+                )
+                signedIn == null && !isGuest -> AuthFlow(
+                    authVm,
+                    onContinueWithoutAccount = authVm::continueAsGuest,
+                )
                 !introDone -> IntroScreen(onFinished = {
                     IntroPrefs.markDone(context)
                     introDone = true
                 })
-                showAccount -> {
+                showAccount && signedIn == null -> {
+                    BackHandler { showAccount = false }
+                    GuestAccountScreen(
+                        onBack = { showAccount = false },
+                        onSignIn = {
+                            authVm.clearMessages()
+                            guestSigningIn = true
+                        },
+                    )
+                }
+                showAccount && signedIn != null -> {
                     val activity = LocalContext.current.findActivity()
                     BackHandler { showAccount = false }
                     AccountScreen(
@@ -205,7 +236,7 @@ fun AppRoot(
                         showAccount = true
                     },
                     showVerifyNote = authVm.showVerifyNote(signedIn),
-                    onDismissVerifyNote = { authVm.dismissVerifyNote(signedIn) },
+                    onDismissVerifyNote = { signedIn?.let(authVm::dismissVerifyNote) },
                 )
             }
         }
@@ -215,7 +246,8 @@ fun AppRoot(
 @Composable
 fun ScrubApp(
     vm: ScrubViewModel,
-    user: AuthUser,
+    /** Null for a guest. */
+    user: AuthUser?,
     onAccount: () -> Unit,
     showVerifyNote: Boolean,
     onDismissVerifyNote: () -> Unit,
@@ -227,6 +259,8 @@ fun ScrubApp(
     // UI-only state: the photo being searched for faces, and thumbnails for the Done screen.
     var pickedPhoto by remember { mutableStateOf<Uri?>(null) }
     var donePrints by remember { mutableStateOf<List<ImageBitmap>>(emptyList()) }
+    // Debug builds only: the Match lab, opened by long-pressing the wordmark on Home.
+    var showMatchLab by remember { mutableStateOf(false) }
 
     // Grab small copies of the photos about to be trashed or hidden, while the system dialog
     // is open: once confirmed, they're gone from the gallery.
@@ -278,6 +312,12 @@ fun ScrubApp(
         }
     }
 
+    if (BuildConfig.DEBUG && showMatchLab) {
+        BackHandler { showMatchLab = false }
+        MatchLabScreen(vm.labPhotos, vm.labReferences, onBack = { showMatchLab = false })
+        return
+    }
+
     Box(Modifier.fillMaxSize()) {
         Crossfade(
             targetState = vm.screen,
@@ -309,6 +349,9 @@ fun ScrubApp(
                     onAccount = onAccount,
                     showVerifyNote = showVerifyNote,
                     onDismissVerifyNote = onDismissVerifyNote,
+                    onOpenMatchLab = if (BuildConfig.DEBUG) {
+                        { showMatchLab = true }
+                    } else null,
                 )
                 Screen.PickFace -> PickFaceScreen(vm, photo = pickedPhoto, onPickAnother = pickPhoto)
                 Screen.Scanning -> ScanScreen(vm)

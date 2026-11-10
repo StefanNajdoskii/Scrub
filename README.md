@@ -16,21 +16,22 @@ The only thing that goes online is signing in to your account (Firebase Authenti
 
 | Step | What happens |
 |---|---|
-| Sign in | Create an account with email and password, or tap **Continue with Google**. Only your name, email and sign-in details go to Firebase Authentication. |
+| Sign in (optional) | Create an account with email and password, tap **Continue with Google**, or **Continue without an account**. Everything works without an account. Only if you sign in do your name, email and sign-in details go to Firebase Authentication. |
 | Pick a photo | The system photo picker opens. ML Kit finds the faces in the photo and you tap theirs. Adding 2–3 photos improves accuracy. |
-| Scan | Every gallery photo is decoded at up to 1024 px, faces are detected (ML Kit), and each face is turned into a 128-number fingerprint (FaceNet, `assets/facenet.tflite`). |
-| Match | Each fingerprint is compared with the reference faces using cosine similarity. The **strictness** slider sets the cut-off (default 0.55). |
+| Scan | Every gallery photo is decoded at up to 1024 px, faces are detected (ML Kit), straightened so the eyes are level, and turned into a 128-number fingerprint (FaceNet, `assets/facenet.tflite`, averaged with the mirrored face). |
+| Match | Faces that are small (< 56 px), turned away (> 45°) or very blurry are skipped. The rest are compared with the reference faces using cosine similarity (best match with one reference; average of best match and the references' centroid with two or more). The **strictness** slider sets the cut-off (default 0.55). |
 | Act | **Trash** uses Android's own trash (recoverable for about 30 days). **Vault** copies the photos into the app's private storage, then removes the originals. Both actions show Android's confirmation dialog first. |
 
 Fingerprints are cached in `faces.bin`, so later scans only process new photos.
 
 ## Privacy
 
-- Internet is used **only** for Firebase Authentication (and to show your Google profile photo).
+- Internet is used **only** for Firebase Authentication (and to show your Google profile photo),
+  and only if you choose to sign in.
 - Photos, face fingerprints (`faces.bin`) and Hidden photos are never uploaded or synced.
   No Firestore, Storage, Analytics or Crashlytics.
 - Signing out or deleting your account doesn't touch your photos or Hidden photos. Hidden photos
-  stay on the phone and can be opened again once you sign in.
+  stay on the phone and can be opened again in the app, signed in or not.
 
 ## Project layout
 
