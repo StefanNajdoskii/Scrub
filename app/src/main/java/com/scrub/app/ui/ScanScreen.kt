@@ -16,14 +16,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.scrub.app.R
 import com.scrub.app.ScrubViewModel
-import java.text.NumberFormat
 
 @Composable
 fun ScanScreen(vm: ScrubViewModel) {
@@ -54,7 +55,6 @@ private fun ScanContent(
     onStop: () -> Unit,
 ) {
     val c = ScrubTheme.colors
-    val fmt = NumberFormat.getIntegerInstance()
 
     Column(
         Modifier
@@ -63,14 +63,14 @@ private fun ScanContent(
     ) {
         Spacer(Modifier.height(56.dp))
         Text(
-            "Scanning your photos",
+            stringResource(R.string.scan_title),
             style = ScrubType.ScreenTitle,
             color = c.graphite,
             modifier = Modifier.semantics { heading() },
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Everything happens on this phone. You can keep it open or put it down.",
+            stringResource(R.string.scan_body),
             style = ScrubType.Body,
             color = c.pencil,
         )
@@ -80,7 +80,7 @@ private fun ScanContent(
         // Photos checked: counts up digit by digit
         RollingNumber(checked, ScrubType.ScreenTitle.copy(fontSize = 40.sp, lineHeight = 48.sp), c.graphite)
         Text(
-            if (total == 0) "Getting ready" else "of ${fmt.format(total)} photos",
+            if (total == 0) stringResource(R.string.scan_getting_ready) else pluralCount(R.plurals.scan_of_total, total),
             style = ScrubType.Body,
             color = c.pencil,
         )
@@ -92,11 +92,7 @@ private fun ScanContent(
         Spacer(Modifier.height(24.dp))
 
         Text(
-            when (found) {
-                0 -> "No matches yet"
-                1 -> "1 possible match so far"
-                else -> "$found possible matches so far"
-            },
+            if (found == 0) stringResource(R.string.scan_no_matches_yet) else pluralCount(R.plurals.scan_found, found),
             style = ScrubType.SectionTitle,
             color = c.graphite,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
@@ -112,12 +108,12 @@ private fun ScanContent(
 
         Spacer(Modifier.weight(1f))
         Text(
-            "The first scan takes a while. Next time Scrub remembers the photos it has already checked.",
+            stringResource(R.string.scan_first_time),
             style = ScrubType.Small,
             color = c.pencil,
         )
         Spacer(Modifier.height(16.dp))
-        SecondaryButton(if (found > 0) "Stop and review" else "Stop", onClick = onStop)
+        SecondaryButton(stringResource(if (found > 0) R.string.scan_stop_and_review else R.string.scan_stop), onClick = onStop)
         Spacer(Modifier.height(24.dp))
     }
 }
@@ -132,7 +128,7 @@ private fun Scan0Preview() = PreviewFrame {
     ScanContent(checked = 0, total = 4812, found = 0, recent = emptyList(), onStop = {})
 }
 
-@ScreenPreviews
+@LocalizedScreenPreviews
 @Composable
 private fun Scan40Preview() = PreviewFrame {
     ScanContent(

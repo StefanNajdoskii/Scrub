@@ -1,3 +1,211 @@
 <resources>
-    <string name="app_name">Scrub</string>
+    <!-- Not translated: the app name and the "scrub" wordmark stay in Latin everywhere. -->
+    <string name="app_name" translatable="false">Scrub</string>
+    <string name="wordmark" translatable="false">scrub</string>
+
+    <!-- Brand and language names: shown as-is in every language -->
+    <string name="brand_google" translatable="false">Google</string>
+    <string name="language_name_en" translatable="false">English</string>
+    <string name="language_name_mk" translatable="false">Македонски</string>
+
+    <!-- ===== Shared ===== -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_select_none">Select none</string>
+    <string name="action_delete_forever">Delete forever</string>
+    <string name="action_choose_another_photo">Choose another photo</string>
+    <string name="action_open_settings">Open settings</string>
+    <string name="hidden_photos">Hidden photos</string>
+    <string name="photo_tick">Tick</string>
+    <string name="photo_untick">Untick</string>
+    <string name="photo_view_larger">View larger</string>
+    <string name="photo_larger">Photo, larger</string>
+
+    <!-- ===== Permissions (Home) ===== -->
+    <string name="permission_partial">Scrub can only see the photos you allowed. To scan everything, allow all photos in Settings.</string>
+    <string name="permission_denied">Scrub needs access to your photos to find them. Nothing leaves your phone.</string>
+
+    <!-- ===== Sign in ===== -->
+    <string name="auth_tagline">Clear one person out of your photos.</string>
+    <string name="auth_continue_google">Continue with Google</string>
+    <string name="auth_or">or</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+    <string name="auth_sign_in">Sign in</string>
+    <string name="auth_new_here">New here?</string>
+    <string name="auth_create_account_link">Create an account</string>
+    <string name="auth_continue_without_account">Continue without an account</string>
+
+    <string name="field_name">Name</string>
+    <string name="field_email">Email</string>
+    <string name="field_password">Password</string>
+    <string name="field_confirm_password">Confirm password</string>
+    <string name="field_show_password">Show password</string>
+    <string name="field_hide_password">Hide password</string>
+
+    <!-- ===== Create account ===== -->
+    <string name="create_title">Create an account</string>
+    <string name="create_sign_in_instead">Sign in instead</string>
+    <!-- Keep the 8 in sync with AuthValidation.MIN_PASSWORD -->
+    <string name="create_password_hint">At least 8 characters</string>
+    <string name="create_button">Create account</string>
+    <string name="create_have_account">I already have an account</string>
+
+    <!-- ===== Reset password ===== -->
+    <string name="reset_title">Reset your password</string>
+    <string name="reset_intro">Enter the email you signed up with. We\'ll send you a link to choose a new password.</string>
+    <string name="reset_send">Send reset link</string>
+    <string name="reset_sent_title">Check your email</string>
+    <!-- %1$s: the email address -->
+    <string name="reset_sent_body">Reset link sent to %1$s. Check your inbox and spam folder.</string>
+    <string name="reset_back_to_sign_in">Back to sign in</string>
+
+    <!-- ===== Form checks (AuthValidation) ===== -->
+    <string name="validation_enter_name">Enter your name.</string>
+    <string name="validation_enter_email">Enter your email.</string>
+    <string name="validation_invalid_email">Enter a valid email address.</string>
+    <string name="validation_enter_password">Enter your password.</string>
+    <string name="validation_choose_password">Choose a password.</string>
+    <string name="validation_retype_password">Type your password again.</string>
+    <string name="validation_passwords_differ">Passwords don\'t match.</string>
+
+    <!-- ===== Sign-in errors (AuthRepository) ===== -->
+    <string name="auth_error_wrong_credentials">Email or password is incorrect.</string>
+    <string name="auth_error_wrong_password">That password is incorrect.</string>
+    <string name="auth_error_email_in_use">An account with this email already exists. Sign in instead?</string>
+    <!-- Keep the 8 in sync with AuthValidation.MIN_PASSWORD -->
+    <string name="auth_error_weak_password">Use at least 8 characters.</string>
+    <string name="auth_error_no_network">No internet connection. Signing in needs internet; scanning your photos doesn\'t.</string>
+    <string name="auth_error_google_failed">Google sign-in didn\'t work. Try again.</string>
+    <string name="auth_error_no_google_account">No Google account found on this phone. Add one in Settings, then try again.</string>
+    <string name="auth_error_google_email_has_password">This email already has a Scrub account with a password. Sign in with your email instead.</string>
+    <string name="auth_error_wrong_google_account">That\'s a different Google account. Pick the one you signed in with.</string>
+    <string name="auth_error_too_many_attempts">Too many attempts. Wait a few minutes, then try again.</string>
+    <string name="auth_error_sign_in_again">For your security, sign in again to continue.</string>
+    <string name="auth_error_account_disabled">This account has been turned off.</string>
+    <string name="auth_error_signed_out">You\'ve been signed out. Sign in again.</string>
+    <string name="auth_error_generic">Something went wrong. Try again.</string>
+
+    <!-- ===== Intro ===== -->
+    <string name="intro_skip">Skip</string>
+    <string name="intro_next">Next</string>
+    <string name="intro_get_started">Get started</string>
+    <string name="intro_page1_title">Pick their face</string>
+    <string name="intro_page1_body">Choose a photo of them and tap their face.</string>
+    <string name="intro_page2_title">Scrub checks your photos</string>
+    <string name="intro_page2_body">It looks through your gallery on this phone. Nothing is uploaded.</string>
+    <string name="intro_page3_title">You decide</string>
+    <string name="intro_page3_body">Review what it found. Nothing is removed until you confirm.</string>
+    <!-- TalkBack. %1$s: page number, %2$s: number of pages, %3$s: page title -->
+    <string name="intro_step_description">Step %1$s of %2$s: %3$s</string>
+    <!-- TalkBack. %1$s: page number, %2$s: number of pages -->
+    <string name="intro_page_indicator">Page %1$s of %2$s</string>
+
+    <!-- ===== Home ===== -->
+    <string name="home_tagline">Clear someone out of your camera roll.</string>
+    <string name="home_open_account">Open account</string>
+    <string name="home_account">Account</string>
+    <string name="home_account_guest">Account, not signed in</string>
+    <string name="home_verify_email">Check your inbox to verify your email.</string>
+    <string name="home_step1_title">Add photos of them</string>
+    <string name="home_step1_body_empty">Pick a clear photo of them. You\'ll tap their face next.</string>
+    <string name="home_step1_body_more">Add 2 or 3 different photos of them for the most accurate results.</string>
+    <string name="home_step2_title">Scan your photos</string>
+    <string name="home_step2_body">Scrub looks through every photo on this phone for their face.</string>
+    <string name="home_scan_button">Scan my photos</string>
+    <string name="home_step3_title">Review and remove</string>
+    <string name="home_step3_body">You choose which photos go to the trash and which get hidden. Nothing is removed until you confirm.</string>
+    <string name="home_step_done">Done</string>
+    <!-- TalkBack. %1$s: the step title -->
+    <string name="home_step_unavailable">%1$s, not available yet</string>
+    <string name="home_their_face">Their face</string>
+    <string name="home_remove_face">Remove this face</string>
+    <string name="home_add_photo">Add photo</string>
+    <string name="home_add_photo_description">Add a photo of them</string>
+    <string name="home_privacy">Your photos never leave this phone.</string>
+
+    <!-- ===== Pick a face ===== -->
+    <string name="pick_title">Which one is them?</string>
+    <string name="pick_photo_description">The photo you picked</string>
+    <string name="pick_looking">Looking for faces</string>
+    <string name="pick_no_faces_title">No faces found</string>
+    <string name="pick_no_faces_body">Try a photo where their face is clear, well lit and facing the camera.</string>
+    <string name="pick_tap_face">Tap their face.</string>
+    <!-- TalkBack. %1$s: face number, %2$s: number of faces -->
+    <string name="pick_face_description">Face %1$s of %2$s</string>
+    <string name="pick_face_description_selected">Face %1$s of %2$s, selected</string>
+    <string name="pick_weak_face">This face is small or blurry, so matches may be less accurate. A clearer photo works better.</string>
+    <string name="pick_use_face">Use this face</string>
+
+    <!-- ===== Scanning ===== -->
+    <string name="scan_title">Scanning your photos</string>
+    <string name="scan_body">Everything happens on this phone. You can keep it open or put it down.</string>
+    <string name="scan_getting_ready">Getting ready</string>
+    <string name="scan_no_matches_yet">No matches yet</string>
+    <string name="scan_first_time">The first scan takes a while. Next time Scrub remembers the photos it has already checked.</string>
+    <string name="scan_stop_and_review">Stop and review</string>
+    <string name="scan_stop">Stop</string>
+
+    <!-- ===== Results ===== -->
+    <string name="results_no_matches">No matches</string>
+    <string name="results_strictness">Match strictness</string>
+    <string name="results_strictness_help">Seeing other people? Slide right. Missing photos of them? Slide left. Tap a photo to untick it, hold to see it larger.</string>
+    <string name="results_all_clear_title">All clear</string>
+    <string name="results_all_clear_body">No photos match at this strictness. Slide left to loosen it, or add more photos of them on the start screen.</string>
+    <string name="results_photo_ticked">Matching photo, ticked</string>
+    <string name="results_photo_unticked">Matching photo, not ticked</string>
+
+    <!-- ===== Done ===== -->
+    <string name="done_trash_title">Scrubbed.</string>
+    <string name="done_hidden_title">Hidden away.</string>
+    <string name="done_finish">Finish</string>
+
+    <!-- ===== Busy overlay ===== -->
+    <string name="busy_restoring">Restoring…</string>
+
+    <!-- ===== Hidden photos (the vault) ===== -->
+    <string name="vault_intro">Hidden from your gallery and other apps. Restore them any time. Uninstalling Scrub permanently deletes everything in here.</string>
+    <string name="vault_empty_title">Nothing hidden yet</string>
+    <string name="vault_empty_body">Photos you hide after a scan will show up here.</string>
+    <string name="vault_photo">Hidden photo</string>
+    <string name="vault_photo_ticked">Hidden photo, ticked</string>
+    <string name="vault_tap_to_choose">Tap photos to choose them</string>
+    <string name="vault_restore">Restore</string>
+    <string name="vault_delete_title">Delete forever?</string>
+
+    <!-- ===== Account ===== -->
+    <string name="account_title">Account</string>
+    <!-- Shown when the account has no name and no email -->
+    <string name="account_name_fallback">You</string>
+    <string name="account_name">Name</string>
+    <string name="account_email">Email</string>
+    <string name="account_email_none">None</string>
+    <string name="account_signed_in_with">Signed in with</string>
+    <string name="account_method_email">Email and password</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_delete">Delete account</string>
+    <string name="account_privacy">Your account is only used to sign in. Your photos, face data and hidden photos stay on this phone and are never uploaded.</string>
+    <string name="account_delete_title">Delete your account?</string>
+    <string name="account_delete_body">This deletes your Scrub account only. Photos on this phone and in Hidden photos are not affected. You can create a new account at any time.</string>
+    <string name="account_reauth_title">Sign in again</string>
+    <string name="account_reauth_google">For your security, choose your Google account again to delete your Scrub account.</string>
+    <string name="account_reauth_password">For your security, enter your password again to delete your Scrub account.</string>
+
+    <string name="guest_title">Not signed in</string>
+    <string name="guest_body">Scrub works fully without an account. Signing in is optional.</string>
+    <string name="guest_sign_in">Sign in or create account</string>
+
+    <!-- ===== Settings (Account screen) ===== -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="appearance_system">System</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="settings_language">Language</string>
+    <!-- The language the app is shown in right now, in that language -->
+    <string name="language_current">English</string>
+    <string name="language_phone">Phone language</string>
+    <!-- %1$s: the language Scrub is shown in, e.g. "English" -->
+    <string name="language_phone_current">Phone language (%1$s)</string>
 </resources>

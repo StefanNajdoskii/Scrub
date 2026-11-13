@@ -37,7 +37,27 @@ phone and trashes them or hides them in a private on-device vault.
 Use the pencil-and-eraser design system in `ui/Theme.kt` (colors via `ScrubTheme.colors`,
 `ScrubType` text styles) and the components in `ui/Components.kt` / `ui/FormComponents.kt`.
 Eraser pink is a fill, never text. Ink red is for errors and permanent actions only.
-Every screen must work in light and dark; add `@ScreenPreviews` previews for new screens.
+Every screen must work in light and dark; add `@ScreenPreviews` previews for new screens
+(`@LocalizedScreenPreviews` adds Macedonian at 360dp, to catch text that doesn't fit).
+
+## Languages and settings
+
+- English (`values/`) and Macedonian (`values-mk/`, Cyrillic, informal "ти"). No hardcoded
+  user-visible text: strings in `strings.xml`, counts in `plurals.xml` with the count as `%1$s`
+  pre-formatted via `formatCount()` / `pluralCount()` / `countLabel()` (`ui/Text.kt`). Never
+  build plurals with if/else or sentences by concatenation. ViewModels hand the UI `UiText`,
+  not strings. "Scrub" and the "scrub" wordmark are never translated. Every new string needs
+  its Macedonian version (follow the glossary at the top of `values-mk/strings.xml`).
+- Bricolage has no Cyrillic. In Cyrillic locales headings/buttons use Onest (`res/font/
+  onest_variable.ttf`, OFL); `ScrubType.ScreenTitle/SectionTitle/Button/StepNumber` pick the
+  font, so read them only from composables. The wordmark is always Bricolage.
+- Buttons and titles grow to 2 lines instead of cutting text off; keep it that way.
+- `settings/AppSettings.kt` (DataStore, local only): Appearance (System/Light/Dark) and the app
+  language. Android 13+ keeps the language itself (`locales_config.xml`, LocaleManager);
+  Android 11-12 store it here and `MainActivity.attachBaseContext` overrides the locale (and
+  on Android 11 the night mode). Android 12+ also gets `setApplicationNightMode`. The bundle
+  keeps all languages (`bundle.language.enableSplit = false`) so the in-app choice always works.
+  New languages: add `values-xx/`, `locales_config.xml` and `AppLanguage`.
 
 ## Build and release
 

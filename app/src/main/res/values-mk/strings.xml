@@ -1,0 +1,229 @@
+<resources>
+    <!--
+    ГЛОСАР / Glossary (use the same word for the same thing everywhere)
+    Tone: plain, calm, short. Informal "ти". Sentence case. No exclamation marks.
+
+      Scrub, "scrub" wordmark   not translated
+      photo / photos             фотографија / фотографии
+      gallery                    галерија
+      them (the person)          личноста ("photos of them" = "фотографии од личноста",
+                                 "their face" = "лицето на личноста" or just "лицето")
+      face                       лице
+      trash                      корпа ("премести во корпа")
+      Hidden photos (the vault)  Скриени фотографии; hide = скриј. "Vault" is never said in MK,
+                                 the English "vault" is always "Скриени фотографии".
+      restore                    врати
+      delete forever             избриши засекогаш
+      scan                       скенирај / скенирање
+      match / possible match     совпаѓање / можно совпаѓање
+      strictness                 строгост ("Строгост на совпаѓањето")
+      tick / untick / ticked     означи / отстрани ознака / означена (agrees with фотографија)
+      account                    сметка (as in "сметка на Google")
+      sign in / sign out         најави се / одјави се; sign-in = најава
+      email                      е-пошта
+      password                   лозинка
+      Settings (Android)         Поставки
+      appearance / light / dark  изглед / светол / темен (agree with "изглед")
+      language                   јазик
+    -->
+
+    <!-- ===== Shared ===== -->
+    <string name="action_back">Назад</string>
+    <string name="action_cancel">Откажи</string>
+    <string name="action_close">Затвори</string>
+    <string name="action_dismiss">Затвори</string>
+    <string name="action_select_all">Означи ги сите</string>
+    <string name="action_select_none">Тргни ги ознаките</string>
+    <string name="action_delete_forever">Избриши засекогаш</string>
+    <string name="action_choose_another_photo">Избери друга фотографија</string>
+    <string name="action_open_settings">Отвори Поставки</string>
+    <string name="hidden_photos">Скриени фотографии</string>
+    <string name="photo_tick">Означи</string>
+    <string name="photo_untick">Отстрани ознака</string>
+    <string name="photo_view_larger">Види поголема</string>
+    <string name="photo_larger">Фотографија, поголема</string>
+
+    <!-- ===== Permissions (Home) ===== -->
+    <string name="permission_partial">Scrub ги гледа само фотографиите што ги дозволи. За да ги скенира сите, дозволи пристап до сите фотографии во Поставки.</string>
+    <string name="permission_denied">На Scrub му треба пристап до твоите фотографии за да ги најде. Ништо не го напушта телефонот.</string>
+
+    <!-- ===== Sign in ===== -->
+    <string name="auth_tagline">Исчисти една личност од твоите фотографии.</string>
+    <string name="auth_continue_google">Продолжи со Google</string>
+    <string name="auth_or">или</string>
+    <string name="auth_forgot_password">Ја заборави лозинката?</string>
+    <string name="auth_sign_in">Најави се</string>
+    <!-- CHECK: "New here?" without gendered "нов/нова" -->
+    <string name="auth_new_here">Прв пат тука?</string>
+    <string name="auth_create_account_link">Создај сметка</string>
+    <string name="auth_continue_without_account">Продолжи без сметка</string>
+
+    <string name="field_name">Име</string>
+    <string name="field_email">Е-пошта</string>
+    <string name="field_password">Лозинка</string>
+    <string name="field_confirm_password">Потврди ја лозинката</string>
+    <string name="field_show_password">Прикажи ја лозинката</string>
+    <string name="field_hide_password">Скриј ја лозинката</string>
+
+    <!-- ===== Create account ===== -->
+    <string name="create_title">Создај сметка</string>
+    <string name="create_sign_in_instead">Најави се наместо тоа</string>
+    <string name="create_password_hint">Најмалку 8 знаци</string>
+    <string name="create_button">Создај сметка</string>
+    <string name="create_have_account">Веќе имам сметка</string>
+
+    <!-- ===== Reset password ===== -->
+    <string name="reset_title">Ресетирај ја лозинката</string>
+    <string name="reset_intro">Внеси ја е-поштата со која се регистрираше. Ќе ти испратиме врска за да избереш нова лозинка.</string>
+    <string name="reset_send">Испрати врска</string>
+    <string name="reset_sent_title">Провери ја е-поштата</string>
+    <string name="reset_sent_body">Испративме врска за ресетирање до %1$s. Провери го сандачето и папката за спам.</string>
+    <string name="reset_back_to_sign_in">Назад кон најавата</string>
+
+    <!-- ===== Form checks (AuthValidation) ===== -->
+    <string name="validation_enter_name">Внеси го твоето име.</string>
+    <string name="validation_enter_email">Внеси ја твојата е-пошта.</string>
+    <string name="validation_invalid_email">Внеси важечка адреса на е-пошта.</string>
+    <string name="validation_enter_password">Внеси ја лозинката.</string>
+    <string name="validation_choose_password">Избери лозинка.</string>
+    <string name="validation_retype_password">Внеси ја лозинката повторно.</string>
+    <string name="validation_passwords_differ">Лозинките не се совпаѓаат.</string>
+
+    <!-- ===== Sign-in errors (AuthRepository) ===== -->
+    <string name="auth_error_wrong_credentials">Е-поштата или лозинката не се точни.</string>
+    <string name="auth_error_wrong_password">Лозинката не е точна.</string>
+    <string name="auth_error_email_in_use">Веќе постои сметка со оваа е-пошта. Да се најавиш наместо тоа?</string>
+    <string name="auth_error_weak_password">Користи најмалку 8 знаци.</string>
+    <string name="auth_error_no_network">Нема интернет. За најава треба интернет, за скенирање на фотографиите не треба.</string>
+    <string name="auth_error_google_failed">Најавата со Google не успеа. Обиди се повторно.</string>
+    <string name="auth_error_no_google_account">На овој телефон нема сметка на Google. Додај сметка во Поставки, па обиди се повторно.</string>
+    <string name="auth_error_google_email_has_password">Оваа е-пошта веќе има сметка на Scrub со лозинка. Најави се со е-пошта.</string>
+    <string name="auth_error_wrong_google_account">Тоа е друга сметка на Google. Избери ја онаа со која се најави.</string>
+    <string name="auth_error_too_many_attempts">Премногу обиди. Почекај неколку минути, па обиди се повторно.</string>
+    <string name="auth_error_sign_in_again">За твоја безбедност, најави се повторно за да продолжиш.</string>
+    <!-- CHECK: "turned off" = исклучена (or оневозможена?) -->
+    <string name="auth_error_account_disabled">Оваа сметка е исклучена.</string>
+    <!-- Avoids the gendered "одјавен/одјавена" -->
+    <string name="auth_error_signed_out">Сесијата заврши. Најави се повторно.</string>
+    <string name="auth_error_generic">Нешто не успеа. Обиди се повторно.</string>
+
+    <!-- ===== Intro ===== -->
+    <string name="intro_skip">Прескокни</string>
+    <string name="intro_next">Следно</string>
+    <string name="intro_get_started">Да почнеме</string>
+    <string name="intro_page1_title">Избери го лицето</string>
+    <string name="intro_page1_body">Избери фотографија од личноста и допри го лицето.</string>
+    <string name="intro_page2_title">Scrub ги проверува фотографиите</string>
+    <string name="intro_page2_body">Ја пребарува галеријата на овој телефон. Ништо не се прикачува.</string>
+    <string name="intro_page3_title">Ти одлучуваш</string>
+    <string name="intro_page3_body">Прегледај што најде. Ништо не се отстранува додека не потврдиш.</string>
+    <string name="intro_step_description">Чекор %1$s од %2$s: %3$s</string>
+    <string name="intro_page_indicator">Страница %1$s од %2$s</string>
+
+    <!-- ===== Home ===== -->
+    <string name="home_tagline">Исчисти некого од твојата галерија.</string>
+    <string name="home_open_account">Отвори ја сметката</string>
+    <string name="home_account">Сметка</string>
+    <string name="home_account_guest">Сметка, без најава</string>
+    <string name="home_verify_email">Провери го сандачето за да ја потврдиш е-поштата.</string>
+    <string name="home_step1_title">Додај фотографии од личноста</string>
+    <string name="home_step1_body_empty">Избери јасна фотографија од личноста. Потоа ќе го допреш лицето.</string>
+    <string name="home_step1_body_more">Додај 2 или 3 различни фотографии од личноста за најточни резултати.</string>
+    <string name="home_step2_title">Скенирај ги фотографиите</string>
+    <string name="home_step2_body">Scrub го бара лицето во секоја фотографија на овој телефон.</string>
+    <string name="home_scan_button">Скенирај ги моите фотографии</string>
+    <string name="home_step3_title">Прегледај и отстрани</string>
+    <string name="home_step3_body">Ти избираш кои фотографии одат во корпа, а кои се кријат. Ништо не се отстранува додека не потврдиш.</string>
+    <string name="home_step_done">Готово</string>
+    <string name="home_step_unavailable">%1$s, сè уште не е достапно</string>
+    <string name="home_their_face">Лицето на личноста</string>
+    <string name="home_remove_face">Отстрани го ова лице</string>
+    <!-- CHECK: label under a 72dp circle, so it must stay short. "фотографија" alone doesn't fit
+         on one line there, so this uses the colloquial "фото". -->
+    <string name="home_add_photo">Додај фото</string>
+    <string name="home_add_photo_description">Додај фотографија од личноста</string>
+    <string name="home_privacy">Твоите фотографии никогаш не го напуштаат овој телефон.</string>
+
+    <!-- ===== Pick a face ===== -->
+    <!-- CHECK: "Which one is them?" rephrased as "Which face are you looking for?" -->
+    <string name="pick_title">Кое лице го бараш?</string>
+    <string name="pick_photo_description">Фотографијата што ја избра</string>
+    <string name="pick_looking">Се бараат лица</string>
+    <string name="pick_no_faces_title">Нема пронајдени лица</string>
+    <string name="pick_no_faces_body">Пробај фотографија на која лицето е јасно, добро осветлено и свртено кон камерата.</string>
+    <string name="pick_tap_face">Допри го лицето на личноста.</string>
+    <string name="pick_face_description">Лице %1$s од %2$s</string>
+    <string name="pick_face_description_selected">Лице %1$s од %2$s, избрано</string>
+    <string name="pick_weak_face">Ова лице е мало или нејасно, па совпаѓањата може да се помалку точни. Појасна фотографија работи подобро.</string>
+    <string name="pick_use_face">Користи го ова лице</string>
+
+    <!-- ===== Scanning ===== -->
+    <string name="scan_title">Се скенираат фотографиите</string>
+    <!-- CHECK: "keep it open" = the app, "put it down" = the phone -->
+    <string name="scan_body">Сè се случува на овој телефон. Можеш да ја оставиш апликацијата отворена или да го оставиш телефонот настрана.</string>
+    <string name="scan_getting_ready">Подготовка</string>
+    <string name="scan_no_matches_yet">Сè уште нема совпаѓања</string>
+    <string name="scan_first_time">Првото скенирање трае подолго. Следниот пат Scrub ги памети фотографиите што веќе ги проверил.</string>
+    <string name="scan_stop_and_review">Запри и прегледај</string>
+    <string name="scan_stop">Запри</string>
+
+    <!-- ===== Results ===== -->
+    <string name="results_no_matches">Нема совпаѓања</string>
+    <string name="results_strictness">Строгост на совпаѓањето</string>
+    <string name="results_strictness_help">Гледаш други луѓе? Лизгај надесно. Недостасуваат фотографии од личноста? Лизгај налево. Допри фотографија за да ја отстраниш ознаката, задржи за да ја видиш поголема.</string>
+    <string name="results_all_clear_title">Сè е чисто</string>
+    <string name="results_all_clear_body">Ниедна фотографија не се совпаѓа со оваа строгост. Лизгај налево за да ја намалиш или додај уште фотографии од личноста на почетниот екран.</string>
+    <string name="results_photo_ticked">Фотографија што се совпаѓа, означена</string>
+    <string name="results_photo_unticked">Фотографија што се совпаѓа, неозначена</string>
+
+    <!-- ===== Done ===== -->
+    <!-- CHECK: "Scrubbed." is a little playful in English -->
+    <string name="done_trash_title">Исчистено.</string>
+    <string name="done_hidden_title">Скриено.</string>
+    <string name="done_finish">Заврши</string>
+
+    <!-- ===== Busy overlay ===== -->
+    <string name="busy_restoring">Се враќаат…</string>
+
+    <!-- ===== Hidden photos (the vault) ===== -->
+    <string name="vault_intro">Скриени од галеријата и од другите апликации. Врати ги кога сакаш. Ако го деинсталираш Scrub, сè што е тука се брише засекогаш.</string>
+    <string name="vault_empty_title">Сè уште нема скриени фотографии</string>
+    <string name="vault_empty_body">Фотографиите што ќе ги скриеш по скенирањето ќе се појават тука.</string>
+    <string name="vault_photo">Скриена фотографија</string>
+    <string name="vault_photo_ticked">Скриена фотографија, означена</string>
+    <string name="vault_tap_to_choose">Допри фотографии за да ги избереш</string>
+    <string name="vault_restore">Врати</string>
+    <string name="vault_delete_title">Да се избрише засекогаш?</string>
+
+    <!-- ===== Account ===== -->
+    <string name="account_title">Сметка</string>
+    <string name="account_name_fallback">Ти</string>
+    <string name="account_name">Име</string>
+    <string name="account_email">Е-пошта</string>
+    <string name="account_email_none">Нема</string>
+    <string name="account_signed_in_with">Најава со</string>
+    <string name="account_method_email">Е-пошта и лозинка</string>
+    <string name="account_sign_out">Одјави се</string>
+    <string name="account_delete">Избриши ја сметката</string>
+    <string name="account_privacy">Сметката служи само за најава. Твоите фотографии, податоците за лицата и скриените фотографии остануваат на овој телефон и никогаш не се прикачуваат.</string>
+    <string name="account_delete_title">Да ја избришеш сметката?</string>
+    <string name="account_delete_body">Ова ја брише само твојата сметка на Scrub. Фотографиите на овој телефон и во Скриени фотографии остануваат. Можеш да создадеш нова сметка во секое време.</string>
+    <string name="account_reauth_title">Најави се повторно</string>
+    <string name="account_reauth_google">За твоја безбедност, повторно избери ја сметката на Google за да ја избришеш сметката на Scrub.</string>
+    <string name="account_reauth_password">За твоја безбедност, повторно внеси ја лозинката за да ја избришеш сметката на Scrub.</string>
+
+    <!-- Avoids the gendered "Не си најавен/најавена" -->
+    <string name="guest_title">Без најава</string>
+    <string name="guest_body">Scrub работи целосно и без сметка. Најавата не е задолжителна.</string>
+    <string name="guest_sign_in">Најави се или создај сметка</string>
+
+    <!-- ===== Settings (Account screen) ===== -->
+    <string name="settings_appearance">Изглед</string>
+    <string name="appearance_system">Системски</string>
+    <string name="appearance_light">Светол</string>
+    <string name="appearance_dark">Темен</string>
+    <string name="settings_language">Јазик</string>
+    <string name="language_current">Македонски</string>
+    <string name="language_phone">Јазик на телефонот</string>
+    <string name="language_phone_current">Јазик на телефонот (%1$s)</string>
+</resources>

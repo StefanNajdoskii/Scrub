@@ -5,11 +5,15 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Resources
+import android.content.ActivityNotFoundException
+import androidx.core.graphics.drawable.toDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -18,6 +22,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -31,7 +36,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.lifecycleScope
 import androidx.activity.viewModels
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -44,7 +52,13 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import com.scrub.app.settings.AppSettings
+import com.scrub.app.settings.ThemeMode
+import com.scrub.app.ui.AppSettingsUi
+import com.scrub.app.ui.DarkPalette
 import com.scrub.app.ui.IntroPrefs
+import com.scrub.app.ui.LightPalette
+import com.scrub.app.ui.resolve
 import com.scrub.app.ui.IntroScreen
 import com.scrub.app.ui.rememberAnimationsOff
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +86,16 @@ import com.scrub.app.ui.VaultScreen
 class MainActivity : ComponentActivity() {
     private val authVm: AuthViewModel by viewModels()
 
+    /**
+     * Android 11 has no per-app night mode and Android 11-12 no per-app language, so the chosen
+     * Appearance / language are applied to this Activity's own configuration before anything
+     * (the launch splash included) reads its resources.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase)
+        AppSettings.overrideConfiguration(newBase)?.let { applyOverrideConfiguration(it) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Launch screen: Chalk (or #1A1B1E in dark) with the icon, held until Firebase has
         // restored the session so the first frame is already the right screen.
@@ -93,11 +117,90 @@ class MainActivity : ComponentActivity() {
                     .start()
             }
         }
-        enableEdgeToEdge()
+        val startTheme = AppSettings.themeModeNow(this)
+        // On Android 12+ the system also starts the app (splash included) in the chosen mode.
+        // Re-sync in case the system lost it (e.g. after a restore); it's a no-op otherwise.
+        if (startTheme != ThemeMode.System && isDark(startTheme, systemInDark()) != resources.configuration.isNightModeActive) {
+            AppSettings.applyNightMode(this, startTheme)
+        }
+        applySystemBars(isDark(startTheme, systemInDark()))
+        val language = AppSettings.language(this)
+        val systemLanguage = AppSettings.systemLanguageSettings(this)
+
         setContent {
-            ScrubTheme { AppRoot() }
+            val theme by remember { AppSettings.themeMode(applicationContext) }
+                .collectAsStateWithLifecycle(startTheme)
+            val dark = isDark(theme, systemInDarkTheme())
+            LaunchedEffect(dark) { applySystemBars(dark) }
+            val settings = remember(theme) {
+                AppSettingsUi(
+                    theme = theme,
+                    language = language,
+                    onThemeChange = { mode ->
+                        lifecycleScope.launch { AppSettings.setThemeMode(applicationContext, mode) }
+                    },
+                    openSystemLanguage = systemLanguage?.let { intent ->
+                        {
+                            try {
+                                startActivity(intent)
+                                true
+                            } catch (e: ActivityNotFoundException) {
+                                false
+                            }
+                        }
+                    },
+                    onLanguageChange = { choice ->
+                        lifecycleScope.launch {
+                            AppSettings.setLanguage(applicationContext, choice)
+                            // Android 13+ recreates the screen itself after a language change.
+                            if (Build.VERSION.SDK_INT < 33) recreate()
+                        }
+                    },
+                )
+            }
+            ScrubTheme(dark = dark, animateChanges = true) { AppRoot(settings) }
         }
     }
+
+    /**
+     * Status and navigation bar icons follow the app's mode (dark icons on Light, light on Dark),
+     * and so does the window behind Compose (seen e.g. while the keyboard animates).
+     */
+    private fun applySystemBars(dark: Boolean) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT) { dark },
+            // Same scrims as enableEdgeToEdge()'s defaults (only drawn with 3-button navigation)
+            navigationBarStyle = SystemBarStyle.auto(LightNavScrim, DarkNavScrim) { dark },
+        )
+        val background = if (dark) DarkPalette.chalk else LightPalette.chalk
+        window.setBackgroundDrawable(background.toArgb().toDrawable())
+    }
+
+    /** The phone's own dark mode setting, even while this Activity's configuration overrides it. */
+    private fun systemInDark(): Boolean =
+        if (Build.VERSION.SDK_INT >= 31) resources.configuration.isNightModeActive
+        else Resources.getSystem().configuration.isNightModeActive
+}
+
+private val LightNavScrim = android.graphics.Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+private val DarkNavScrim = android.graphics.Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+
+private fun isDark(theme: ThemeMode, systemDark: Boolean) = when (theme) {
+    ThemeMode.Light -> false
+    ThemeMode.Dark -> true
+    ThemeMode.System -> systemDark
+}
+
+/**
+ * The phone's dark mode setting, as Compose state. On Android 12+ the Activity configuration
+ * follows it whenever Appearance is System. On Android 11 the configuration may be overridden
+ * (see MainActivity.attachBaseContext), so read the system's own.
+ */
+@Composable
+private fun systemInDarkTheme(): Boolean {
+    if (Build.VERSION.SDK_INT >= 31) return isSystemInDarkTheme()
+    val configuration = LocalConfiguration.current
+    return remember(configuration) { Resources.getSystem().configuration.isNightModeActive }
 }
 
 /** Loads up to a few small bitmaps for the Done screen's print stack. Skips any that fail. */
@@ -143,6 +246,7 @@ private fun hasPartialAccess(ctx: Context) =
  */
 @Composable
 fun AppRoot(
+    settings: AppSettingsUi,
     authVm: AuthViewModel = viewModel(),
     scrubVm: ScrubViewModel = viewModel(),
 ) {
@@ -204,6 +308,7 @@ fun AppRoot(
                 showAccount && signedIn == null -> {
                     BackHandler { showAccount = false }
                     GuestAccountScreen(
+                        settings = settings,
                         onBack = { showAccount = false },
                         onSignIn = {
                             authVm.clearMessages()
@@ -220,6 +325,7 @@ fun AppRoot(
                         error = authVm.error,
                         errorFrom = authVm.errorFrom,
                         needsReauth = authVm.needsReauth,
+                        settings = settings,
                         onBack = { showAccount = false },
                         onSignOut = authVm::signOut,
                         onDelete = authVm::deleteAccount,
@@ -255,7 +361,7 @@ fun ScrubApp(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val animationsOff = rememberAnimationsOff()
-    var permissionNote by remember { mutableStateOf<String?>(null) }
+    var permissionNote by remember { mutableStateOf<Int?>(null) }
     // UI-only state: the photo being searched for faces, and thumbnails for the Done screen.
     var pickedPhoto by remember { mutableStateOf<Uri?>(null) }
     var donePrints by remember { mutableStateOf<List<ImageBitmap>>(emptyList()) }
@@ -289,11 +395,10 @@ fun ScrubApp(
                 vm.startScan()
             }
             hasPartialAccess(context) -> {
-                permissionNote = "Scrub can only see the photos you allowed. To scan everything, allow all photos in Settings."
+                permissionNote = R.string.permission_partial
                 vm.startScan()
             }
-            else -> permissionNote =
-                "Scrub needs access to your photos to find them. Nothing leaves your phone."
+            else -> permissionNote = R.string.permission_denied
         }
     }
 
@@ -375,6 +480,6 @@ fun ScrubApp(
             }
         }
 
-        vm.busyMessage?.let { BusyOverlay(it) }
+        vm.busyMessage?.let { BusyOverlay(it.resolve()) }
     }
 }

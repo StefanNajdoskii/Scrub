@@ -69,9 +69,10 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
     var strictness by mutableFloatStateOf(DEFAULT_STRICTNESS)
     var deselected by mutableStateOf(emptySet<Long>())
 
-    var busyMessage by mutableStateOf<String?>(null)
-    var doneTitle by mutableStateOf("")
-    var doneBody by mutableStateOf("")
+    // Resolved to text by the UI, so it's always in the current language.
+    var busyMessage by mutableStateOf<UiText?>(null)
+    var doneTitle by mutableStateOf<UiText?>(null)
+    var doneBody by mutableStateOf<UiText?>(null)
 
     var vaultItems by mutableStateOf<List<VaultItem>>(emptyList())
 
@@ -233,9 +234,8 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
         pendingTrash = emptyList()
         if (!approved || done.isEmpty()) return
         removeFromMatches(done)
-        doneTitle = "Scrubbed."
-        doneBody = "${plural(done.size)} moved to the trash. You can still recover them from your " +
-            "gallery's trash for about 30 days, after which they're gone for good."
+        doneTitle = UiText.Res(R.string.done_trash_title)
+        doneBody = UiText.Count(R.plurals.done_trash_body, done.size)
         screen = Screen.Done
     }
 
@@ -247,7 +247,7 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
         val chosen = selectedMatches.map { it.image }
         if (chosen.isEmpty()) return
         viewModelScope.launch {
-            busyMessage = "Moving ${plural(chosen.size)} to the vault…"
+            busyMessage = UiText.Count(R.plurals.busy_moving_to_vault, chosen.size)
             val copied = withContext(Dispatchers.IO) {
                 chosen.mapNotNull { img -> vault.copyIn(resolver, img)?.let { img to it } }
             }
@@ -270,9 +270,8 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
         }
         removeFromMatches(copied.map { it.first })
         refreshVault()
-        doneTitle = "Hidden away."
-        doneBody = "${plural(copied.size)} moved into Scrub's private vault. They no longer appear " +
-            "in your gallery. Open the vault any time to restore or delete them."
+        doneTitle = UiText.Res(R.string.done_hidden_title)
+        doneBody = UiText.Count(R.plurals.done_hidden_body, copied.size)
         screen = Screen.Done
     }
 
@@ -294,7 +293,7 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
 
     fun restoreFromVault(items: List<VaultItem>, onDone: (Int) -> Unit) {
         viewModelScope.launch {
-            busyMessage = "Restoring…"
+            busyMessage = UiText.Res(R.string.busy_restoring)
             val ok = withContext(Dispatchers.IO) { items.count { vault.restore(resolver, it) } }
             busyMessage = null
             refreshVault()
@@ -339,7 +338,5 @@ class ScrubViewModel(app: Application) : AndroidViewModel(app) {
         const val MAX_SCORE = 0.90f
         const val DEFAULT_STRICTNESS = 0.55f
         private const val PARALLEL = 4
-
-        fun plural(n: Int) = if (n == 1) "1 photo" else "$n photos"
     }
 }

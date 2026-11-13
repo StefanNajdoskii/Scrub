@@ -66,6 +66,14 @@ android {
     androidResources {
         noCompress += "tflite"
     }
+
+    // The in-app language choice (Account > Language) can switch to a language the phone isn't
+    // set to, so every translation must be installed: don't let Play split the bundle by language.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
 }
 
 kotlin {
@@ -91,6 +99,9 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+    // Local settings (Appearance, and the app language on Android 11-12). On-device only.
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")

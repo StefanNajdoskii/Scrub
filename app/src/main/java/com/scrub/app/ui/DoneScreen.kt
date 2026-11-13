@@ -37,10 +37,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.scrub.app.R
 import com.scrub.app.Screen
 import com.scrub.app.ScrubViewModel
 import kotlin.random.Random
@@ -52,8 +54,8 @@ import kotlin.random.Random
 @Composable
 fun DoneScreen(vm: ScrubViewModel, prints: List<ImageBitmap>) {
     DoneContent(
-        title = vm.doneTitle,
-        body = vm.doneBody,
+        title = vm.doneTitle?.resolve().orEmpty(),
+        body = vm.doneBody?.resolve().orEmpty(),
         prints = prints,
         othersCount = if (vm.matches.isNotEmpty()) vm.visibleMatches.size else null,
         onReviewOthers = { vm.screen = Screen.Results },
@@ -130,10 +132,10 @@ private fun DoneContent(
 
         Column(Modifier.graphicsLayer { alpha = buttonsAlpha.value }) {
             if (othersCount != null) {
-                SecondaryButton("Review the other $othersCount", onClick = onReviewOthers)
+                SecondaryButton(pluralCount(R.plurals.done_review_others, othersCount), onClick = onReviewOthers)
                 Spacer(Modifier.height(16.dp))
             }
-            PrimaryButton("Finish", onClick = onFinish)
+            PrimaryButton(stringResource(R.string.done_finish), onClick = onFinish)
         }
     }
 }
@@ -223,13 +225,12 @@ private fun PrintStack(prints: List<ImageBitmap>, progress: Float, width: androi
 // Previews
 // ---------------------------------------------------------------------------------------------
 
-@ScreenPreviews
+@LocalizedScreenPreviews
 @Composable
 private fun DoneEndStatePreview() = PreviewFrame {
     DoneContent(
-        title = "Scrubbed.",
-        body = "12 photos moved to the trash. You can still recover them from your gallery's trash " +
-            "for about 30 days, after which they're gone for good.",
+        title = stringResource(R.string.done_trash_title),
+        body = pluralCount(R.plurals.done_trash_body, 12),
         prints = emptyList(),
         othersCount = 3,
         onReviewOthers = {},

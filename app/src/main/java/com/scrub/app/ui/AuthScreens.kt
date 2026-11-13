@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.scrub.app.R
@@ -168,10 +169,10 @@ fun SignInScreen(
     var checked by rememberSaveable { mutableStateOf(false) }
     val idle = pending == null
 
-    val emailError = if (checked) AuthValidation.email(email) else null
-    val passwordError = if (checked) AuthValidation.existingPassword(password) else null
-    val googleError = error?.message?.takeIf { errorFrom == AuthAction.Google }
-    val formError = error?.message?.takeIf { errorFrom == AuthAction.SignIn }
+    val emailError = errorText(if (checked) AuthValidation.email(email) else null)
+    val passwordError = errorText(if (checked) AuthValidation.existingPassword(password) else null)
+    val googleError = errorText(error?.messageRes?.takeIf { errorFrom == AuthAction.Google })
+    val formError = errorText(error?.messageRes?.takeIf { errorFrom == AuthAction.SignIn })
 
     fun submit() {
         checked = true
@@ -190,11 +191,11 @@ fun SignInScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("New here?", style = ScrubType.Body, color = c.pencil)
-                    QuietButton("Create an account", onClick = onCreateAccount, enabled = idle)
+                    Text(stringResource(R.string.auth_new_here), style = ScrubType.Body, color = c.pencil)
+                    QuietButton(stringResource(R.string.auth_create_account_link), onClick = onCreateAccount, enabled = idle)
                 }
                 if (onContinueWithoutAccount != null) {
-                    QuietButton("Continue without an account", onClick = onContinueWithoutAccount, enabled = idle)
+                    QuietButton(stringResource(R.string.auth_continue_without_account), onClick = onContinueWithoutAccount, enabled = idle)
                 }
             }
         },
@@ -207,18 +208,18 @@ fun SignInScreen(
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconAction(Icons.AutoMirrored.Filled.ArrowBack, "Back", onBack)
+                IconAction(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), onBack)
             }
         }
         Column(Modifier.padding(horizontal = Gutter)) {
             Spacer(Modifier.height(if (onBack != null) 8.dp else 40.dp))
             Wordmark()
             Spacer(Modifier.height(8.dp))
-            Text("Clear one person out of your photos.", style = ScrubType.Body, color = c.pencil)
+            Text(stringResource(R.string.auth_tagline), style = ScrubType.Body, color = c.pencil)
 
             Spacer(Modifier.height(40.dp))
             SecondaryButton(
-                text = "Continue with Google",
+                text = stringResource(R.string.auth_continue_google),
                 onClick = onGoogle,
                 painter = painterResource(R.drawable.ic_google_g),
                 enabled = idle,
@@ -226,12 +227,12 @@ fun SignInScreen(
             )
             if (googleError != null) FieldError(googleError, Modifier.padding(top = 8.dp))
 
-            LabeledDivider("or", Modifier.padding(vertical = 24.dp))
+            LabeledDivider(stringResource(R.string.auth_or), Modifier.padding(vertical = 24.dp))
 
             ScrubTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = "Email",
+                label = stringResource(R.string.field_email),
                 kind = FieldKind.Email,
                 error = emailError,
                 enabled = idle,
@@ -240,7 +241,7 @@ fun SignInScreen(
             ScrubTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = "Password",
+                label = stringResource(R.string.field_password),
                 kind = FieldKind.Password,
                 error = passwordError,
                 imeAction = ImeAction.Done,
@@ -249,7 +250,7 @@ fun SignInScreen(
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 QuietButton(
-                    "Forgot password?",
+                    stringResource(R.string.auth_forgot_password),
                     onClick = onForgotPassword,
                     enabled = idle,
                     modifier = Modifier.padding(top = 4.dp),
@@ -258,7 +259,7 @@ fun SignInScreen(
             if (formError != null) FieldError(formError, Modifier.padding(bottom = 8.dp))
             Spacer(Modifier.height(8.dp))
             PrimaryButton(
-                text = "Sign in",
+                text = stringResource(R.string.auth_sign_in),
                 onClick = ::submit,
                 enabled = idle,
                 loading = pending == AuthAction.SignIn,
@@ -290,14 +291,14 @@ fun CreateAccountScreen(
     val idle = pending == null
 
     // Firebase errors that belong to a field go under it; the rest go above the button.
-    val serverEmail = error?.message?.takeIf { error.field == AuthError.Field.Email }
-    val serverPassword = error?.message?.takeIf { error.field == AuthError.Field.Password }
-    val formError = error?.message?.takeIf { error.field == null }
+    val serverEmail = error?.messageRes?.takeIf { error.field == AuthError.Field.Email }
+    val serverPassword = error?.messageRes?.takeIf { error.field == AuthError.Field.Password }
+    val formError = errorText(error?.messageRes?.takeIf { error.field == null })
 
-    val nameError = if (checked) AuthValidation.name(name) else null
-    val emailError = (if (checked) AuthValidation.email(email) else null) ?: serverEmail
-    val passwordError = (if (checked) AuthValidation.newPassword(password) else null) ?: serverPassword
-    val confirmError = if (checked) AuthValidation.confirmPassword(password, confirm) else null
+    val nameError = errorText(if (checked) AuthValidation.name(name) else null)
+    val emailError = errorText((if (checked) AuthValidation.email(email) else null) ?: serverEmail)
+    val passwordError = errorText((if (checked) AuthValidation.newPassword(password) else null) ?: serverPassword)
+    val confirmError = errorText(if (checked) AuthValidation.confirmPassword(password, confirm) else null)
     val longEnough = password.length >= AuthValidation.MIN_PASSWORD
     val toGo = AuthValidation.MIN_PASSWORD - password.length
 
@@ -314,25 +315,25 @@ fun CreateAccountScreen(
     }
 
     FormColumn {
-        TopBar("Create an account", onBack = onBack)
+        TopBar(stringResource(R.string.create_title), onBack = onBack)
         Column(Modifier.padding(horizontal = Gutter)) {
             Spacer(Modifier.height(8.dp))
-            ScrubTextField(name, { name = it }, "Name", FieldKind.Name, error = nameError, enabled = idle)
+            ScrubTextField(name, { name = it }, stringResource(R.string.field_name), FieldKind.Name, error = nameError, enabled = idle)
             Spacer(Modifier.height(16.dp))
-            ScrubTextField(email, onEmailChange, "Email", FieldKind.Email, error = emailError, enabled = idle)
+            ScrubTextField(email, onEmailChange, stringResource(R.string.field_email), FieldKind.Email, error = emailError, enabled = idle)
             if (error?.kind == AuthError.Kind.EmailInUse) {
-                QuietButton("Sign in instead", onClick = onSignInInstead, enabled = idle)
+                QuietButton(stringResource(R.string.create_sign_in_instead), onClick = onSignInInstead, enabled = idle)
             }
             Spacer(Modifier.height(16.dp))
             ScrubTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = "Password",
+                label = stringResource(R.string.field_password),
                 kind = FieldKind.NewPassword,
                 // Live hint: counts down, then ticks. Turns into an error only after submitting.
                 error = passwordError,
-                hint = if (longEnough || password.isEmpty()) "At least 8 characters"
-                else "At least 8 characters ($toGo more)",
+                hint = if (longEnough || password.isEmpty()) stringResource(R.string.create_password_hint)
+                else pluralCount(R.plurals.create_password_hint_more, toGo),
                 hintMet = longEnough,
                 enabled = idle,
             )
@@ -340,7 +341,7 @@ fun CreateAccountScreen(
             ScrubTextField(
                 value = confirm,
                 onValueChange = { confirm = it },
-                label = "Confirm password",
+                label = stringResource(R.string.field_confirm_password),
                 kind = FieldKind.NewPassword,
                 error = confirmError,
                 imeAction = ImeAction.Done,
@@ -350,14 +351,14 @@ fun CreateAccountScreen(
             Spacer(Modifier.height(24.dp))
             if (formError != null) FieldError(formError, Modifier.padding(bottom = 8.dp))
             PrimaryButton(
-                text = "Create account",
+                text = stringResource(R.string.create_button),
                 onClick = ::submit,
                 enabled = idle,
                 loading = pending == AuthAction.Register,
             )
             Spacer(Modifier.height(8.dp))
             QuietButton(
-                "I already have an account",
+                stringResource(R.string.create_have_account),
                 onClick = onSignInInstead,
                 enabled = idle,
                 modifier = Modifier.fillMaxWidth(),
@@ -385,9 +386,11 @@ fun ForgotPasswordScreen(
     val focusManager = LocalFocusManager.current
     var checked by rememberSaveable { mutableStateOf(false) }
     val idle = pending == null
-    val emailError = (if (checked) AuthValidation.email(email) else null)
-        ?: error?.message?.takeIf { error.field == AuthError.Field.Email }
-    val formError = error?.message?.takeIf { error.field == null }
+    val emailError = errorText(
+        (if (checked) AuthValidation.email(email) else null)
+            ?: error?.messageRes?.takeIf { error.field == AuthError.Field.Email }
+    )
+    val formError = errorText(error?.messageRes?.takeIf { error.field == null })
 
     fun submit() {
         checked = true
@@ -398,21 +401,21 @@ fun ForgotPasswordScreen(
     }
 
     FormColumn {
-        TopBar("Reset your password", onBack = onBack)
+        TopBar(stringResource(R.string.reset_title), onBack = onBack)
         Column(Modifier.padding(horizontal = Gutter)) {
             if (sentTo != null) {
                 Spacer(Modifier.height(48.dp))
                 Hero(
                     icon = Icons.Outlined.MarkEmailRead,
-                    title = "Check your email",
-                    body = "Reset link sent to $sentTo. Check your inbox and spam folder.",
+                    title = stringResource(R.string.reset_sent_title),
+                    body = stringResource(R.string.reset_sent_body, sentTo),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(40.dp))
-                PrimaryButton("Back to sign in", onClick = onBack)
+                PrimaryButton(stringResource(R.string.reset_back_to_sign_in), onClick = onBack)
             } else {
                 Text(
-                    "Enter the email you signed up with. We'll send you a link to choose a new password.",
+                    stringResource(R.string.reset_intro),
                     style = ScrubType.Body,
                     color = c.pencil,
                 )
@@ -420,7 +423,7 @@ fun ForgotPasswordScreen(
                 ScrubTextField(
                     value = email,
                     onValueChange = onEmailChange,
-                    label = "Email",
+                    label = stringResource(R.string.field_email),
                     kind = FieldKind.Email,
                     error = emailError,
                     imeAction = ImeAction.Done,
@@ -430,7 +433,7 @@ fun ForgotPasswordScreen(
                 Spacer(Modifier.height(24.dp))
                 if (formError != null) FieldError(formError, Modifier.padding(bottom = 8.dp))
                 PrimaryButton(
-                    text = "Send reset link",
+                    text = stringResource(R.string.reset_send),
                     onClick = ::submit,
                     enabled = idle,
                     loading = pending == AuthAction.Reset,

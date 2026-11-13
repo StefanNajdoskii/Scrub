@@ -1,5 +1,8 @@
 package com.scrub.app.ui
 
+import android.icu.util.ULocale
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -9,14 +12,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.scrub.app.R
+import java.util.Locale
 
 /**
  * "Pencil and eraser": paper, graphite and one pink eraser.
@@ -74,6 +82,7 @@ val DarkPalette = ScrubPalette(
 
 private val LocalScrubPalette = staticCompositionLocalOf { LightPalette }
 
+/** Display font for Latin locales. Has no Cyrillic glyphs at all. */
 val Bricolage = FontFamily(
     Font(R.font.bricolage_regular, FontWeight.Normal),
     Font(R.font.bricolage_medium, FontWeight.Medium),
@@ -81,43 +90,86 @@ val Bricolage = FontFamily(
     Font(R.font.bricolage_extrabold, FontWeight.ExtraBold),
 )
 
-/** Type scale. Bricolage for headings and buttons, system sans for body. */
-object ScrubType {
-    val Wordmark = TextStyle(
-        fontFamily = Bricolage, fontWeight = FontWeight.ExtraBold,
-        fontSize = 56.sp, lineHeight = 64.sp, letterSpacing = (-2).sp,
-    )
-    val ScreenTitle = TextStyle(
-        fontFamily = Bricolage, fontWeight = FontWeight.SemiBold,
+/**
+ * Display font for Cyrillic locales (Macedonian, and any other Cyrillic-script phone language).
+ * Onest (OFL, assets/onest_OFL.txt) covers Macedonian Ѓ Ќ Ѕ Џ Љ Њ Ј. One variable file
+ * serves all four weights.
+ */
+@OptIn(ExperimentalTextApi::class)
+val Onest = FontFamily(
+    Font(R.font.onest_variable, FontWeight.Normal, variationSettings = FontVariation.Settings(FontVariation.weight(400))),
+    Font(R.font.onest_variable, FontWeight.Medium, variationSettings = FontVariation.Settings(FontVariation.weight(500))),
+    Font(R.font.onest_variable, FontWeight.SemiBold, variationSettings = FontVariation.Settings(FontVariation.weight(600))),
+    Font(R.font.onest_variable, FontWeight.ExtraBold, variationSettings = FontVariation.Settings(FontVariation.weight(800))),
+)
+
+/** Headings and buttons in one display font. */
+@Immutable
+private class DisplayStyles(display: FontFamily) {
+    val screenTitle = TextStyle(
+        fontFamily = display, fontWeight = FontWeight.SemiBold,
         fontSize = 28.sp, lineHeight = 32.sp, letterSpacing = (-0.5).sp,
     )
-    val SectionTitle = TextStyle(
-        fontFamily = Bricolage, fontWeight = FontWeight.SemiBold,
+    val sectionTitle = TextStyle(
+        fontFamily = display, fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp, lineHeight = 24.sp,
     )
-    val Body = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp, lineHeight = 24.sp)
-    val Small = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 14.sp, lineHeight = 20.sp)
-    val Button = TextStyle(
-        fontFamily = Bricolage, fontWeight = FontWeight.Medium,
+    val button = TextStyle(
+        fontFamily = display, fontWeight = FontWeight.Medium,
         fontSize = 16.sp, lineHeight = 24.sp,
     )
-    /** Numbers in the 28dp step circles (Home steps, intro pages). */
-    val StepNumber = TextStyle(
-        fontFamily = Bricolage, fontWeight = FontWeight.Medium,
+    val stepNumber = TextStyle(
+        fontFamily = display, fontWeight = FontWeight.Medium,
         fontSize = 14.sp, lineHeight = 20.sp,
     )
 }
 
-private val Type = Typography(
+private val LatinStyles = DisplayStyles(Bricolage)
+private val CyrillicStyles = DisplayStyles(Onest)
+private val LocalDisplayStyles = staticCompositionLocalOf { LatinStyles }
+
+/** True when [locale] is written in Cyrillic: "mk", "ru", "sr" (Cyrillic by default), "sr-Cyrl"... */
+fun isCyrillic(locale: Locale): Boolean {
+    if (locale.script.isNotEmpty()) return locale.script == "Cyrl"
+    return ULocale.addLikelySubtags(ULocale.forLocale(locale)).script == "Cyrl"
+}
+
+/**
+ * Type scale. Headings and buttons use the display font: Bricolage for Latin locales, Onest for
+ * Cyrillic ones, so Macedonian headings never fall back to the system font letter by letter.
+ * Body text is the system sans in every language. The wordmark is always Bricolage.
+ */
+object ScrubType {
+    /** "scrub" is never translated, so it keeps Bricolage in every language. */
+    val Wordmark = TextStyle(
+        fontFamily = Bricolage, fontWeight = FontWeight.ExtraBold,
+        fontSize = 56.sp, lineHeight = 64.sp, letterSpacing = (-2).sp,
+    )
+    val ScreenTitle: TextStyle
+        @Composable @ReadOnlyComposable get() = LocalDisplayStyles.current.screenTitle
+    val SectionTitle: TextStyle
+        @Composable @ReadOnlyComposable get() = LocalDisplayStyles.current.sectionTitle
+    val Body = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 16.sp, lineHeight = 24.sp)
+    val Small = TextStyle(fontFamily = FontFamily.SansSerif, fontSize = 14.sp, lineHeight = 20.sp)
+    val Button: TextStyle
+        @Composable @ReadOnlyComposable get() = LocalDisplayStyles.current.button
+    /** Numbers in the 28dp step circles (Home steps, intro pages). */
+    val StepNumber: TextStyle
+        @Composable @ReadOnlyComposable get() = LocalDisplayStyles.current.stepNumber
+}
+
+private fun typography(s: DisplayStyles) = Typography(
     displayLarge = ScrubType.Wordmark,
-    headlineMedium = ScrubType.ScreenTitle,
-    titleLarge = ScrubType.SectionTitle,
-    titleMedium = ScrubType.SectionTitle,
+    headlineMedium = s.screenTitle,
+    titleLarge = s.sectionTitle,
+    titleMedium = s.sectionTitle,
     bodyLarge = ScrubType.Body,
     bodyMedium = ScrubType.Small,
     bodySmall = ScrubType.Small,
-    labelLarge = ScrubType.Button,
+    labelLarge = s.button,
 )
+private val LatinTypography = typography(LatinStyles)
+private val CyrillicTypography = typography(CyrillicStyles)
 
 private fun scheme(p: ScrubPalette, dark: Boolean) = if (dark) {
     darkColorScheme(
@@ -148,10 +200,45 @@ object ScrubTheme {
         @Composable @ReadOnlyComposable get() = LocalScrubPalette.current
 }
 
+/**
+ * [animateChanges]: when [dark] flips (the Appearance switch), the colors cross-fade over
+ * 300ms instead of jumping. Skipped when the system has animations turned off.
+ */
 @Composable
-fun ScrubTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    val palette = if (dark) DarkPalette else LightPalette
-    CompositionLocalProvider(LocalScrubPalette provides palette) {
-        MaterialTheme(colorScheme = scheme(palette, dark), typography = Type, content = content)
+fun ScrubTheme(
+    dark: Boolean = isSystemInDarkTheme(),
+    animateChanges: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val target = if (dark) DarkPalette else LightPalette
+    val palette = if (animateChanges && !rememberAnimationsOff()) animatedPalette(target) else target
+    val locale = LocalConfiguration.current.locales[0]
+    val cyrillic = remember(locale) { isCyrillic(locale) }
+    CompositionLocalProvider(
+        LocalScrubPalette provides palette,
+        LocalDisplayStyles provides if (cyrillic) CyrillicStyles else LatinStyles,
+    ) {
+        MaterialTheme(
+            colorScheme = scheme(palette, dark),
+            typography = if (cyrillic) CyrillicTypography else LatinTypography,
+            content = content,
+        )
     }
+}
+
+@Composable
+private fun animatedPalette(target: ScrubPalette): ScrubPalette {
+    val spec = tween<Color>(durationMillis = 300)
+    @Composable
+    fun anim(c: Color) = animateColorAsState(c, spec, label = "palette").value
+    return ScrubPalette(
+        chalk = anim(target.chalk),
+        paper = anim(target.paper),
+        graphite = anim(target.graphite),
+        pencil = anim(target.pencil),
+        smudge = anim(target.smudge),
+        eraser = target.eraser,
+        onEraser = target.onEraser,
+        inkRed = anim(target.inkRed),
+    )
 }

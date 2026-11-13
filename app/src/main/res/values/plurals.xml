@@ -1,0 +1,87 @@
+<resources>
+    <!--
+        Every %1$s below is the count, already formatted for the locale (NumberFormat), so it
+        is a string ("4,812"). The plural form is picked from the raw number.
+        Rolling counters split the text around %1$s and animate only the number.
+    -->
+
+    <!-- "3 photos", e.g. the count on the Hidden photos row (TalkBack) -->
+    <plurals name="photo_count">
+        <item quantity="one">%1$s photo</item>
+        <item quantity="other">%1$s photos</item>
+    </plurals>
+
+    <!-- Live password hint while typing. Keep the 8 in sync with AuthValidation.MIN_PASSWORD -->
+    <plurals name="create_password_hint_more">
+        <item quantity="one">At least 8 characters (%1$s more)</item>
+        <item quantity="other">At least 8 characters (%1$s more)</item>
+    </plurals>
+
+    <!-- Scan screen, under the big counter: "of 4,812 photos" -->
+    <plurals name="scan_of_total">
+        <item quantity="one">of %1$s photo</item>
+        <item quantity="other">of %1$s photos</item>
+    </plurals>
+
+    <plurals name="scan_found">
+        <item quantity="one">%1$s possible match so far</item>
+        <item quantity="other">%1$s possible matches so far</item>
+    </plurals>
+
+    <!-- Results title -->
+    <plurals name="results_title">
+        <item quantity="one">%1$s photo of them</item>
+        <item quantity="other">%1$s photos of them</item>
+    </plurals>
+
+    <!-- Results bottom bar caption. %1$s: ticked, %2$s: all shown. Form follows %1$s. -->
+    <plurals name="results_ticked_of">
+        <item quantity="one">%1$s of %2$s ticked</item>
+        <item quantity="other">%1$s of %2$s ticked</item>
+    </plurals>
+
+    <!-- Results bottom bar buttons -->
+    <plurals name="results_hide">
+        <item quantity="one">Hide %1$s</item>
+        <item quantity="other">Hide %1$s</item>
+    </plurals>
+    <plurals name="results_trash">
+        <item quantity="one">Move %1$s to trash</item>
+        <item quantity="other">Move %1$s to trash</item>
+    </plurals>
+
+    <!-- Done screen -->
+    <plurals name="done_trash_body">
+        <item quantity="one">%1$s photo moved to the trash. You can still recover it from your gallery\'s trash for about 30 days, after which it\'s gone for good.</item>
+        <item quantity="other">%1$s photos moved to the trash. You can still recover them from your gallery\'s trash for about 30 days, after which they\'re gone for good.</item>
+    </plurals>
+    <plurals name="done_hidden_body">
+        <item quantity="one">%1$s photo moved into Scrub\'s private vault. It no longer appears in your gallery. Open the vault any time to restore or delete it.</item>
+        <item quantity="other">%1$s photos moved into Scrub\'s private vault. They no longer appear in your gallery. Open the vault any time to restore or delete them.</item>
+    </plurals>
+    <!-- Matches left after acting on some of them -->
+    <plurals name="done_review_others">
+        <item quantity="one">Review the other %1$s</item>
+        <item quantity="other">Review the other %1$s</item>
+    </plurals>
+
+    <!-- Busy overlay while copying into Hidden photos -->
+    <plurals name="busy_moving_to_vault">
+        <item quantity="one">Moving %1$s photo to the vault…</item>
+        <item quantity="other">Moving %1$s photos to the vault…</item>
+    </plurals>
+
+    <!-- Hidden photos -->
+    <plurals name="vault_ticked">
+        <item quantity="one">%1$s ticked</item>
+        <item quantity="other">%1$s ticked</item>
+    </plurals>
+    <plurals name="vault_restored">
+        <item quantity="one">%1$s photo back in your gallery</item>
+        <item quantity="other">%1$s photos back in your gallery</item>
+    </plurals>
+    <plurals name="vault_delete_body">
+        <item quantity="one">%1$s photo will be permanently erased. This can\'t be undone.</item>
+        <item quantity="other">%1$s photos will be permanently erased. This can\'t be undone.</item>
+    </plurals>
+</resources>

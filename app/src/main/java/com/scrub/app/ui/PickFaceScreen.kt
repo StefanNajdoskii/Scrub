@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -28,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.scrub.app.R
 import com.scrub.app.Screen
 import com.scrub.app.ScrubViewModel
 
@@ -36,7 +38,7 @@ import com.scrub.app.ScrubViewModel
 fun PickFaceScreen(vm: ScrubViewModel, photo: Uri?, onPickAnother: () -> Unit) {
     val c = ScrubTheme.colors
     Column(Modifier.fillMaxSize()) {
-        TopBar("Which one is them?", onBack = { vm.screen = Screen.Home })
+        TopBar(stringResource(R.string.pick_title), onBack = { vm.screen = Screen.Home })
 
         when {
             vm.pickLoading -> Column(
@@ -50,7 +52,7 @@ fun PickFaceScreen(vm: ScrubViewModel, photo: Uri?, onPickAnother: () -> Unit) {
                     val sweep = rememberSweepProgress()
                     AsyncImage(
                         model = photo,
-                        contentDescription = "The photo you picked",
+                        contentDescription = stringResource(R.string.pick_photo_description),
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .weight(1f, fill = false)
@@ -62,7 +64,7 @@ fun PickFaceScreen(vm: ScrubViewModel, photo: Uri?, onPickAnother: () -> Unit) {
                 }
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "Looking for faces",
+                    stringResource(R.string.pick_looking),
                     style = ScrubType.Body,
                     color = c.pencil,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
@@ -77,17 +79,17 @@ fun PickFaceScreen(vm: ScrubViewModel, photo: Uri?, onPickAnother: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 Hero(
                     Icons.Filled.FaceRetouchingOff,
-                    "No faces found",
-                    "Try a photo where their face is clear, well lit and facing the camera.",
+                    stringResource(R.string.pick_no_faces_title),
+                    stringResource(R.string.pick_no_faces_body),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.weight(1f))
-                PrimaryButton("Choose another photo", onPickAnother)
+                PrimaryButton(stringResource(R.string.action_choose_another_photo), onPickAnother)
             }
 
             else -> {
                 Text(
-                    "Tap their face.",
+                    stringResource(R.string.pick_tap_face),
                     style = ScrubType.Body,
                     color = c.pencil,
                     modifier = Modifier.padding(horizontal = Gutter),
@@ -105,8 +107,12 @@ fun PickFaceScreen(vm: ScrubViewModel, photo: Uri?, onPickAnother: () -> Unit) {
                         Box {
                             FaceThumb(
                                 thumb,
-                                contentDescription = "Face ${i + 1} of ${vm.candidateFaces.size}" +
-                                    if (face === weak) ", selected" else "",
+                                contentDescription = stringResource(
+                                    if (face === weak) R.string.pick_face_description_selected
+                                    else R.string.pick_face_description,
+                                    formatCount(i + 1),
+                                    formatCount(vm.candidateFaces.size),
+                                ),
                                 onClick = { vm.tapCandidate(face) },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -137,16 +143,15 @@ private fun WeakFaceNote(onUse: () -> Unit, onPickAnother: () -> Unit, modifier:
     val c = ScrubTheme.colors
     Column(modifier.padding(bottom = 24.dp)) {
         Text(
-            "This face is small or blurry, so matches may be less accurate. " +
-                "A clearer photo works better.",
+            stringResource(R.string.pick_weak_face),
             style = ScrubType.Small,
             color = c.pencil,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
         Spacer(Modifier.height(16.dp))
-        PrimaryButton("Use this face", onUse)
+        PrimaryButton(stringResource(R.string.pick_use_face), onUse)
         Spacer(Modifier.height(8.dp))
-        SecondaryButton("Choose another photo", onPickAnother)
+        SecondaryButton(stringResource(R.string.action_choose_another_photo), onPickAnother)
     }
 }
 

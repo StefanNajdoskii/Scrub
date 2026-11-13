@@ -15,7 +15,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.animation.core.snap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -70,10 +75,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.scrub.app.R
 
 // ---------------------------------------------------------------------------------------------
 // Shape and spacing
@@ -125,8 +133,17 @@ fun Hairline(modifier: Modifier = Modifier) {
 
 private enum class ButtonKind { Primary, Secondary }
 
-/** Button text with a number that rolls when it changes: "Move ", 12, " to trash". */
-data class CountLabel(val before: String, val count: Int, val after: String = "")
+/**
+ * Text with a number that rolls when it changes: "Move ", 12, " to trash". Build it from a
+ * plural with [countLabel], so the words come from the translation.
+ */
+data class CountLabel(
+    val before: String,
+    val count: Int,
+    val after: String = "",
+    /** False when a translation has no number in it: then only [before] is shown. */
+    val showCount: Boolean = true,
+)
 
 /** Small spinner shown inside a button while its request runs. */
 @Composable
@@ -177,7 +194,8 @@ private fun FilledButton(
     Row(
         modifier
             .fillMaxWidth()
-            .height(56.dp)
+            // Grows (rather than cutting text off) when a longer translation wraps to 2 lines.
+            .heightIn(min = 56.dp)
             .focusRing(focused, c.graphite, ButtonRadius)
             .clip(ButtonShape)
             .background(fill)
@@ -189,7 +207,7 @@ private fun FilledButton(
                 role = Role.Button,
                 onClick = onClick,
             )
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -214,9 +232,16 @@ private fun FilledButton(
             }
         }
         if (countLabel != null) {
-            CountText(countLabel.before, countLabel.count, countLabel.after, ScrubType.Button, content)
+            CountText(countLabel, ScrubType.Button, content, centered = true)
         } else {
-            Text(text, style = ScrubType.Button, color = content, maxLines = 1)
+            Text(
+                text,
+                style = ScrubType.Button,
+                color = content,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -303,7 +328,7 @@ private fun PlainTextButton(
             Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(8.dp))
         }
-        Text(text, style = ScrubType.Button, color = content)
+        Text(text, style = ScrubType.Button, color = content, textAlign = TextAlign.Center)
     }
 }
 
@@ -351,6 +376,69 @@ fun IconAction(icon: ImageVector, contentDescription: String, onClick: () -> Uni
     }
 }
 
+/**
+ * A row of equal options, one chosen: Smudge outline, the chosen one filled Eraser with
+ * Graphite ink. Labels wrap rather than being cut off. Read as radio buttons by TalkBack.
+ */
+@Composable
+fun SegmentedControl(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = ScrubTheme.colors
+    val off = rememberAnimationsOff()
+    val outer = RoundedCornerShape(ButtonRadius)
+    val inner = RoundedCornerShape(ButtonRadius - 4.dp)
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(outer)
+            .border(1.dp, c.smudge, outer)
+            .padding(4.dp)
+            .height(IntrinsicSize.Min)
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        options.forEachIndexed { i, label ->
+            val selected = i == selectedIndex
+            val source = remember { MutableInteractionSource() }
+            val focused by source.collectIsFocusedAsState()
+            val fill by animateColorAsState(
+                if (selected) c.eraser else Color.Transparent,
+                if (off) snap() else tween(150),
+                label = "segment",
+            )
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .heightIn(min = 40.dp)
+                    .focusRing(focused, c.graphite, ButtonRadius - 4.dp)
+                    .clip(inner)
+                    .background(fill)
+                    .selectable(
+                        selected = selected,
+                        interactionSource = source,
+                        indication = ripple(color = c.graphite),
+                        role = Role.RadioButton,
+                        onClick = { onSelect(i) },
+                    )
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label,
+                    style = ScrubType.Button,
+                    color = if (selected) c.onEraser else c.graphite,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------------------------
 // Wordmark
 // ---------------------------------------------------------------------------------------------
@@ -392,7 +480,7 @@ fun Wordmark(modifier: Modifier = Modifier, animate: Boolean = true) {
     var baseline by remember { mutableFloatStateOf(0f) }
 
     Text(
-        "scrub",
+        stringResource(R.string.wordmark),
         style = ScrubType.Wordmark,
         color = c.graphite,
         onTextLayout = { baseline = it.firstBaseline },
@@ -435,7 +523,7 @@ fun TopBar(title: String, onBack: () -> Unit, actions: @Composable () -> Unit = 
 @Composable
 fun TopBar(title: CountLabel, onBack: () -> Unit, actions: @Composable () -> Unit = {}) =
     TopBar(onBack = onBack, actions = actions) {
-        CountText(title.before, title.count, title.after, ScrubType.ScreenTitle, ScrubTheme.colors.graphite)
+        CountText(title, ScrubType.ScreenTitle, ScrubTheme.colors.graphite)
     }
 
 @Composable
@@ -448,7 +536,7 @@ private fun TopBar(onBack: () -> Unit, actions: @Composable () -> Unit, title: @
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconAction(Icons.AutoMirrored.Filled.ArrowBack, "Back", onBack)
+            IconAction(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back), onBack)
             Spacer(Modifier.weight(1f))
             actions()
         }
@@ -473,7 +561,7 @@ fun ActionBar(caption: String? = null, content: @Composable () -> Unit) =
 @Composable
 fun ActionBar(caption: CountLabel, content: @Composable () -> Unit) =
     ActionBarLayout(
-        caption = { CountText(caption.before, caption.count, caption.after, ScrubType.Small, ScrubTheme.colors.pencil) },
+        caption = { CountText(caption, ScrubType.Small, ScrubTheme.colors.pencil) },
         content = content,
     )
 
@@ -565,8 +653,12 @@ fun PhotoTile(
             .combinedClickable(
                 interactionSource = source,
                 indication = ripple(color = c.onPhoto),
-                onClickLabel = if (selected == null) null else if (selected) "Untick" else "Tick",
-                onLongClickLabel = if (onLongClick != null) "View larger" else null,
+                onClickLabel = when (selected) {
+                    null -> null
+                    true -> stringResource(R.string.photo_untick)
+                    false -> stringResource(R.string.photo_tick)
+                },
+                onLongClickLabel = if (onLongClick != null) stringResource(R.string.photo_view_larger) else null,
                 onClick = onClick,
                 onLongClick = onLongClick,
             )

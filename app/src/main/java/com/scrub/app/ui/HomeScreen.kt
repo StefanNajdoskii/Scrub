@@ -1,7 +1,7 @@
 package com.scrub.app.ui
 
-import android.content.res.Configuration
 import android.graphics.Bitmap
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -67,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.scrub.app.R
 import com.scrub.app.RefFace
 import com.scrub.app.Screen
 import com.scrub.app.ScrubViewModel
@@ -84,7 +86,7 @@ fun HomeScreen(
     vm: ScrubViewModel,
     onAddPhoto: () -> Unit,
     onScan: () -> Unit,
-    permissionNote: String?,
+    @StringRes permissionNote: Int?,
     onPermissionNoteClick: () -> Unit,
     user: AuthUser?,
     onAccount: () -> Unit,
@@ -116,7 +118,7 @@ private fun HomeContent(
     onRemoveReference: (RefFace) -> Unit,
     onScan: () -> Unit,
     onOpenHidden: () -> Unit,
-    permissionNote: String?,
+    @StringRes permissionNote: Int?,
     onPermissionNoteClick: () -> Unit,
     user: AuthUser?,
     onAccount: () -> Unit,
@@ -158,14 +160,16 @@ private fun HomeContent(
                         photoUrl = user?.photoUrl,
                         size = 40.dp,
                         onClick = onAccount,
-                        onClickLabel = "Open account",
-                        contentDescription = if (user != null) "Account" else "Account, not signed in",
+                        onClickLabel = stringResource(R.string.home_open_account),
+                        contentDescription = stringResource(
+                            if (user != null) R.string.home_account else R.string.home_account_guest
+                        ),
                         modifier = Modifier.padding(top = 16.dp),
                     )
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Clear someone out of your camera roll.",
+                    stringResource(R.string.home_tagline),
                     style = ScrubType.Body,
                     color = c.pencil,
                 )
@@ -178,9 +182,10 @@ private fun HomeContent(
 
                 Step(
                     number = 1,
-                    title = "Add photos of them",
-                    description = if (!hasRefs) "Pick a clear photo of them. You'll tap their face next."
-                    else "Add 2 or 3 different photos of them for the most accurate results.",
+                    title = stringResource(R.string.home_step1_title),
+                    description = stringResource(
+                        if (!hasRefs) R.string.home_step1_body_empty else R.string.home_step1_body_more
+                    ),
                     state = if (hasRefs) StepState.Done else StepState.Active,
                 ) {
                     Spacer(Modifier.height(16.dp))
@@ -190,7 +195,7 @@ private fun HomeContent(
                             Box(Modifier.size(FaceSize + 8.dp)) {
                                 FaceThumb(
                                     ref.thumbnail,
-                                    contentDescription = "Their face",
+                                    contentDescription = stringResource(R.string.home_their_face),
                                     modifier = Modifier
                                         .size(FaceSize)
                                         .align(Alignment.BottomStart),
@@ -207,8 +212,8 @@ private fun HomeContent(
 
                 Step(
                     number = 2,
-                    title = "Scan your photos",
-                    description = "Scrub looks through every photo on this phone for their face.",
+                    title = stringResource(R.string.home_step2_title),
+                    description = stringResource(R.string.home_step2_body),
                     state = if (hasRefs) StepState.Active else StepState.Upcoming,
                 ) {
                     AnimatedVisibility(
@@ -220,14 +225,14 @@ private fun HomeContent(
                     ) {
                         Column {
                             Spacer(Modifier.height(16.dp))
-                            PrimaryButton(text = "Scan my photos", onClick = onScan)
+                            PrimaryButton(text = stringResource(R.string.home_scan_button), onClick = onScan)
                         }
                     }
                     if (permissionNote != null) {
                         Spacer(Modifier.height(16.dp))
-                        Text(permissionNote, style = ScrubType.Small, color = c.graphite)
+                        Text(stringResource(permissionNote), style = ScrubType.Small, color = c.graphite)
                         QuietButton(
-                            "Open settings",
+                            stringResource(R.string.action_open_settings),
                             onClick = onPermissionNoteClick,
                             modifier = Modifier.padding(top = 4.dp),
                         )
@@ -236,9 +241,8 @@ private fun HomeContent(
 
                 Step(
                     number = 3,
-                    title = "Review and remove",
-                    description = "You choose which photos go to the trash and which get hidden. " +
-                        "Nothing is removed until you confirm.",
+                    title = stringResource(R.string.home_step3_title),
+                    description = stringResource(R.string.home_step3_body),
                     state = StepState.Upcoming,
                     last = true,
                 )
@@ -259,7 +263,7 @@ private fun HomeContent(
                     Icon(Icons.Outlined.Shield, null, Modifier.size(16.dp), tint = c.pencil)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Your photos never leave this phone.",
+                        stringResource(R.string.home_privacy),
                         style = ScrubType.Small,
                         color = c.pencil,
                     )
@@ -285,12 +289,12 @@ private fun VerifyEmailNote(onDismiss: () -> Unit) {
         Icon(Icons.Outlined.Email, null, Modifier.size(20.dp), tint = c.graphite)
         Spacer(Modifier.width(16.dp))
         Text(
-            "Check your inbox to verify your email.",
+            stringResource(R.string.home_verify_email),
             style = ScrubType.Small,
             color = c.graphite,
             modifier = Modifier.weight(1f),
         )
-        IconAction(Icons.Filled.Close, "Dismiss", onDismiss)
+        IconAction(Icons.Filled.Close, stringResource(R.string.action_dismiss), onDismiss)
     }
 }
 
@@ -313,6 +317,7 @@ private fun Step(
     content: @Composable () -> Unit = {},
 ) {
     val c = ScrubTheme.colors
+    val unavailable = stringResource(R.string.home_step_unavailable, title)
     val textColor = if (state == StepState.Upcoming) c.pencil else c.graphite
     val lineColor = if (state == StepState.Done) c.graphite else c.smudge
     Row(
@@ -347,11 +352,11 @@ private fun Step(
             when (state) {
                 // onEraser is the Graphite ink in both themes, so the check stays readable on pink.
                 StepState.Done ->
-                    Icon(Icons.Filled.Check, "Done", tint = c.onEraser, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Check, stringResource(R.string.home_step_done), tint = c.onEraser, modifier = Modifier.size(16.dp))
                 StepState.Active ->
-                    Text("$number", style = ScrubType.StepNumber, color = c.chalk)
+                    Text(formatCount(number), style = ScrubType.StepNumber, color = c.chalk)
                 StepState.Upcoming ->
-                    Text("$number", style = ScrubType.StepNumber, color = c.pencil)
+                    Text(formatCount(number), style = ScrubType.StepNumber, color = c.pencil)
             }
         }
         Spacer(Modifier.width(16.dp))
@@ -369,7 +374,7 @@ private fun Step(
                     .padding(top = 4.dp)
                     .semantics {
                         heading()
-                        if (state == StepState.Upcoming) contentDescription = "$title, not available yet"
+                        if (state == StepState.Upcoming) contentDescription = unavailable
                     },
             )
             Text(description, style = ScrubType.Small, color = textColor)
@@ -387,6 +392,7 @@ private fun AddPhotoSlot(onClick: () -> Unit) {
     val c = ScrubTheme.colors
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
+    val description = stringResource(R.string.home_add_photo_description)
     Column(
         Modifier
             .clip(RoundedCornerShape(ButtonRadius))
@@ -396,7 +402,7 @@ private fun AddPhotoSlot(onClick: () -> Unit) {
                 role = Role.Button,
                 onClick = onClick,
             )
-            .clearAndSetSemantics { contentDescription = "Add a photo of them" }
+            .clearAndSetSemantics { contentDescription = description }
             .padding(bottom = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -423,7 +429,7 @@ private fun AddPhotoSlot(onClick: () -> Unit) {
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            "Add photo",
+            stringResource(R.string.home_add_photo),
             style = ScrubType.Small,
             color = c.pencil,
             textAlign = TextAlign.Center,
@@ -458,13 +464,14 @@ private fun HiddenPhotosRow(count: Int, onClick: () -> Unit) {
     ) {
         Icon(Icons.Outlined.NoEncryption, null, Modifier.size(20.dp), tint = c.graphite)
         Spacer(Modifier.width(16.dp))
-        Text("Hidden photos", style = ScrubType.Button, color = c.graphite, modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.hidden_photos), style = ScrubType.Button, color = c.graphite, modifier = Modifier.weight(1f))
         if (count > 0) {
+            val spoken = pluralCount(R.plurals.photo_count, count)
             Text(
-                "$count",
+                formatCount(count),
                 style = ScrubType.Body,
                 color = c.pencil,
-                modifier = Modifier.semantics { contentDescription = ScrubViewModel.plural(count) },
+                modifier = Modifier.semantics { contentDescription = spoken },
             )
             Spacer(Modifier.width(8.dp))
         }
@@ -485,7 +492,7 @@ private fun RemoveFaceButton(onClick: () -> Unit, modifier: Modifier = Modifier)
                 interactionSource = source,
                 indication = null,
                 role = Role.Button,
-                onClickLabel = "Remove this face",
+                onClickLabel = stringResource(R.string.home_remove_face),
                 onClick = onClick,
             ),
         contentAlignment = Alignment.TopEnd,
@@ -498,7 +505,7 @@ private fun RemoveFaceButton(onClick: () -> Unit, modifier: Modifier = Modifier)
                 .background(c.graphite),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Close, "Remove this face", tint = c.chalk, modifier = Modifier.size(14.dp))
+            Icon(Icons.Filled.Close, stringResource(R.string.home_remove_face), tint = c.chalk, modifier = Modifier.size(14.dp))
         }
     }
 }
@@ -518,11 +525,15 @@ private fun previewFace(): RefFace {
 }
 
 @Composable
-private fun HomePreview(references: List<RefFace>, hiddenCount: Int) = PreviewFrame {
+private fun HomePreview(
+    references: List<RefFace>,
+    hiddenCount: Int,
+    @StringRes permissionNote: Int? = null,
+) = PreviewFrame {
     HomeContent(
         references = references, hiddenCount = hiddenCount,
         onAddPhoto = {}, onRemoveReference = {}, onScan = {}, onOpenHidden = {},
-        permissionNote = null, onPermissionNoteClick = {},
+        permissionNote = permissionNote, onPermissionNoteClick = {},
         user = previewUser, onAccount = {}, showVerifyNote = false, onDismissVerifyNote = {},
     )
 }
@@ -531,13 +542,11 @@ private fun HomePreview(references: List<RefFace>, hiddenCount: Int) = PreviewFr
 @Composable
 private fun HomeNoFacesPreview() = HomePreview(references = emptyList(), hiddenCount = 0)
 
-@Preview(name = "One face", showBackground = true, widthDp = 360, heightDp = 640)
+/** English and Macedonian, light and dark, with one face and the permission note. */
+@LocalizedScreenPreviews
 @Composable
-private fun HomeOneFacePreview() = HomePreview(references = listOf(previewFace()), hiddenCount = 3)
-
-@Preview(
-    name = "Dark, one face", showBackground = true, widthDp = 360, heightDp = 640,
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+private fun HomeOneFacePreview() = HomePreview(
+    references = listOf(previewFace()),
+    hiddenCount = 1234,
+    permissionNote = R.string.permission_partial,
 )
-@Composable
-private fun HomeDarkPreview() = HomePreview(references = listOf(previewFace()), hiddenCount = 3)

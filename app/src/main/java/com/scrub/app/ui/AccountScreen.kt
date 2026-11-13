@@ -26,10 +26,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.scrub.app.R
 import com.scrub.app.auth.AuthAction
 import com.scrub.app.auth.AuthError
 import com.scrub.app.auth.AuthUser
@@ -44,6 +46,7 @@ fun AccountScreen(
     error: AuthError?,
     errorFrom: AuthAction?,
     needsReauth: Boolean,
+    settings: AppSettingsUi,
     onBack: () -> Unit,
     onSignOut: () -> Unit,
     onDelete: () -> Unit,
@@ -54,18 +57,19 @@ fun AccountScreen(
     val c = ScrubTheme.colors
     val idle = pending == null
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
-    val signOutError = error?.message?.takeIf { errorFrom == AuthAction.SignOut }
+    val signOutError = errorText(error?.messageRes?.takeIf { errorFrom == AuthAction.SignOut })
     // A failed retry after signing in again also counts as a delete error.
-    val deleteError = error?.message?.takeIf {
+    val deleteError = errorText(error?.messageRes?.takeIf {
         !needsReauth && (errorFrom == AuthAction.Delete || errorFrom == AuthAction.Reauth)
-    }
+    })
+    val name = user.displayName ?: stringResource(R.string.account_name_fallback)
 
     Column(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        TopBar("Account", onBack = onBack)
+        TopBar(stringResource(R.string.account_title), onBack = onBack)
         Column(Modifier.padding(horizontal = Gutter)) {
             Spacer(Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -73,7 +77,7 @@ fun AccountScreen(
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        user.displayName,
+                        name,
                         style = ScrubType.SectionTitle,
                         color = c.graphite,
                         modifier = Modifier.semantics { heading() },
@@ -84,22 +88,25 @@ fun AccountScreen(
 
             Spacer(Modifier.height(32.dp))
             Hairline()
-            DetailRow("Name", user.displayName)
+            DetailRow(stringResource(R.string.account_name), name)
             Hairline()
-            DetailRow("Email", user.email ?: "None")
+            DetailRow(stringResource(R.string.account_email), user.email ?: stringResource(R.string.account_email_none))
             Hairline()
             DetailRow(
-                "Signed in with",
+                stringResource(R.string.account_signed_in_with),
                 when (user.method) {
-                    SignInMethod.Google -> "Google"
-                    SignInMethod.Email -> "Email and password"
+                    SignInMethod.Google -> stringResource(R.string.brand_google)
+                    SignInMethod.Email -> stringResource(R.string.account_method_email)
                 },
             )
             Hairline()
 
             Spacer(Modifier.height(32.dp))
+            SettingsSection(settings)
+
+            Spacer(Modifier.height(32.dp))
             SecondaryButton(
-                text = "Sign out",
+                text = stringResource(R.string.account_sign_out),
                 onClick = onSignOut,
                 enabled = idle,
                 loading = pending == AuthAction.SignOut,
@@ -107,7 +114,7 @@ fun AccountScreen(
             if (signOutError != null) FieldError(signOutError, Modifier.padding(top = 8.dp))
             Spacer(Modifier.height(8.dp))
             DestructiveButton(
-                text = "Delete account",
+                text = stringResource(R.string.account_delete),
                 onClick = { confirmDelete = true },
                 enabled = idle,
                 loading = !needsReauth && (pending == AuthAction.Delete || pending == AuthAction.Reauth),
@@ -120,8 +127,7 @@ fun AccountScreen(
                 Icon(Icons.Outlined.Shield, null, Modifier.size(16.dp).padding(top = 2.dp), tint = c.pencil)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Your account is only used to sign in. Your photos, face data and hidden " +
-                        "photos stay on this phone and are never uploaded.",
+                    stringResource(R.string.account_privacy),
                     style = ScrubType.Small,
                     color = c.pencil,
                 )
@@ -133,22 +139,21 @@ fun AccountScreen(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete your account?", style = ScrubType.SectionTitle, color = c.graphite) },
+            title = { Text(stringResource(R.string.account_delete_title), style = ScrubType.SectionTitle, color = c.graphite) },
             text = {
                 Text(
-                    "This deletes your Scrub account only. Photos on this phone and in Hidden " +
-                        "photos are not affected. You can create a new account at any time.",
+                    stringResource(R.string.account_delete_body),
                     style = ScrubType.Body,
                     color = c.pencil,
                 )
             },
             confirmButton = {
-                DestructiveButton("Delete account", onClick = {
+                DestructiveButton(stringResource(R.string.account_delete), onClick = {
                     confirmDelete = false
                     onDelete()
                 })
             },
-            dismissButton = { QuietButton("Cancel", onClick = { confirmDelete = false }) },
+            dismissButton = { QuietButton(stringResource(R.string.action_cancel), onClick = { confirmDelete = false }) },
             shape = DialogShape,
             containerColor = c.paper,
             tonalElevation = 0.dp,
@@ -159,7 +164,7 @@ fun AccountScreen(
         ReauthDialog(
             method = user.method,
             pending = pending == AuthAction.Reauth,
-            error = error?.message?.takeIf { errorFrom == AuthAction.Reauth },
+            error = errorText(error?.messageRes?.takeIf { errorFrom == AuthAction.Reauth }),
             onPassword = onReauthWithPassword,
             onGoogle = onReauthWithGoogle,
             onCancel = onCancelReauth,
@@ -169,25 +174,27 @@ fun AccountScreen(
 
 /** Account screen for someone using Scrub without an account. */
 @Composable
-fun GuestAccountScreen(onBack: () -> Unit, onSignIn: () -> Unit) {
+fun GuestAccountScreen(settings: AppSettingsUi, onBack: () -> Unit, onSignIn: () -> Unit) {
     val c = ScrubTheme.colors
     Column(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        TopBar("Not signed in", onBack = onBack)
+        TopBar(stringResource(R.string.guest_title), onBack = onBack)
         Column(Modifier.padding(horizontal = Gutter)) {
             Spacer(Modifier.height(16.dp))
             Avatar(initial = null, photoUrl = null, size = 64.dp)
             Spacer(Modifier.height(24.dp))
             Text(
-                "Scrub works fully without an account. Signing in is optional.",
+                stringResource(R.string.guest_body),
                 style = ScrubType.Body,
                 color = c.pencil,
             )
             Spacer(Modifier.height(32.dp))
-            PrimaryButton("Sign in or create account", onClick = onSignIn)
+            PrimaryButton(stringResource(R.string.guest_sign_in), onClick = onSignIn)
+            Spacer(Modifier.height(40.dp))
+            SettingsSection(settings)
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -220,7 +227,7 @@ private fun ReauthDialog(
     val c = ScrubTheme.colors
     var password by rememberSaveable { mutableStateOf("") }
     var checked by rememberSaveable { mutableStateOf(false) }
-    val emptyError = if (checked && password.isEmpty()) "Enter your password." else null
+    val emptyError = if (checked && password.isEmpty()) stringResource(R.string.validation_enter_password) else null
 
     fun submit() {
         checked = true
@@ -229,14 +236,12 @@ private fun ReauthDialog(
 
     AlertDialog(
         onDismissRequest = { if (!pending) onCancel() },
-        title = { Text("Sign in again", style = ScrubType.SectionTitle, color = c.graphite) },
+        title = { Text(stringResource(R.string.account_reauth_title), style = ScrubType.SectionTitle, color = c.graphite) },
         text = {
             Column(Modifier.imePadding()) {
                 Text(
-                    if (method == SignInMethod.Google)
-                        "For your security, choose your Google account again to delete your Scrub account."
-                    else
-                        "For your security, enter your password again to delete your Scrub account.",
+                    if (method == SignInMethod.Google) stringResource(R.string.account_reauth_google)
+                    else stringResource(R.string.account_reauth_password),
                     style = ScrubType.Body,
                     color = c.pencil,
                 )
@@ -245,7 +250,7 @@ private fun ReauthDialog(
                     ScrubTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = "Password",
+                        label = stringResource(R.string.field_password),
                         kind = FieldKind.Password,
                         error = emptyError ?: error,
                         imeAction = ImeAction.Done,
@@ -259,12 +264,12 @@ private fun ReauthDialog(
         },
         confirmButton = {
             DestructiveButton(
-                text = if (method == SignInMethod.Google) "Continue with Google" else "Delete account",
+                text = if (method == SignInMethod.Google) stringResource(R.string.auth_continue_google) else stringResource(R.string.account_delete),
                 onClick = { if (method == SignInMethod.Google) onGoogle() else submit() },
                 loading = pending,
             )
         },
-        dismissButton = { QuietButton("Cancel", onClick = onCancel, enabled = !pending) },
+        dismissButton = { QuietButton(stringResource(R.string.action_cancel), onClick = onCancel, enabled = !pending) },
         shape = DialogShape,
         containerColor = c.paper,
         tonalElevation = 0.dp,
@@ -284,12 +289,12 @@ private val previewUser = AuthUser(
     emailVerified = false,
 )
 
-@ScreenPreviews
+@LocalizedScreenPreviews
 @Composable
 private fun AccountPreview() = PreviewFrame {
     AccountScreen(
         user = previewUser, pending = null, error = null, errorFrom = null, needsReauth = false,
-        onBack = {}, onSignOut = {}, onDelete = {}, onReauthWithPassword = {},
+        settings = PreviewSettings, onBack = {}, onSignOut = {}, onDelete = {}, onReauthWithPassword = {},
         onReauthWithGoogle = {}, onCancelReauth = {},
     )
 }
@@ -300,13 +305,13 @@ private fun AccountGooglePreview() = PreviewFrame {
     AccountScreen(
         user = previewUser.copy(method = SignInMethod.Google, emailVerified = true),
         pending = AuthAction.SignOut, error = null, errorFrom = null, needsReauth = false,
-        onBack = {}, onSignOut = {}, onDelete = {}, onReauthWithPassword = {},
+        settings = PreviewSettings, onBack = {}, onSignOut = {}, onDelete = {}, onReauthWithPassword = {},
         onReauthWithGoogle = {}, onCancelReauth = {},
     )
 }
 
-@ScreenPreviews
+@LocalizedScreenPreviews
 @Composable
 private fun GuestAccountPreview() = PreviewFrame {
-    GuestAccountScreen(onBack = {}, onSignIn = {})
+    GuestAccountScreen(settings = PreviewSettings, onBack = {}, onSignIn = {})
 }

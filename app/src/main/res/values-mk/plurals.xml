@@ -1,0 +1,84 @@
+<resources>
+    <!--
+        Android picks the form with ICU's CLDR rules for Macedonian:
+          one:   integer ending in 1 but not in 11 (1, 21, 31, 101, 1001...)
+          other: everything else (0, 2-20, 11, 111, 25...)
+        So "21 фотографија" and "11 фотографии". Nouns and adjectives agree with the form:
+        "1 можно совпаѓање", "5 можни совпаѓања". %1$s is the count, already formatted for the
+        locale ("4.812").
+    -->
+
+    <plurals name="photo_count">
+        <item quantity="one">%1$s фотографија</item>
+        <item quantity="other">%1$s фотографии</item>
+    </plurals>
+
+    <plurals name="create_password_hint_more">
+        <item quantity="one">Најмалку 8 знаци (уште %1$s)</item>
+        <item quantity="other">Најмалку 8 знаци (уште %1$s)</item>
+    </plurals>
+
+    <plurals name="scan_of_total">
+        <item quantity="one">од %1$s фотографија</item>
+        <item quantity="other">од %1$s фотографии</item>
+    </plurals>
+
+    <!-- CHECK: "21 можно совпаѓање досега" (one) reads right? -->
+    <plurals name="scan_found">
+        <item quantity="one">%1$s можно совпаѓање досега</item>
+        <item quantity="other">%1$s можни совпаѓања досега</item>
+    </plurals>
+
+    <plurals name="results_title">
+        <item quantity="one">%1$s фотографија од личноста</item>
+        <item quantity="other">%1$s фотографии од личноста</item>
+    </plurals>
+
+    <!-- %1$s: ticked, %2$s: all shown. The verb agrees with %1$s. -->
+    <plurals name="results_ticked_of">
+        <item quantity="one">%1$s од %2$s е означена</item>
+        <item quantity="other">%1$s од %2$s се означени</item>
+    </plurals>
+
+    <plurals name="results_hide">
+        <item quantity="one">Скриј %1$s</item>
+        <item quantity="other">Скриј %1$s</item>
+    </plurals>
+    <plurals name="results_trash">
+        <item quantity="one">Премести %1$s во корпа</item>
+        <item quantity="other">Премести %1$s во корпа</item>
+    </plurals>
+
+    <plurals name="done_trash_body">
+        <item quantity="one">%1$s фотографија е преместена во корпа. Можеш да ја вратиш од корпата во галеријата околу 30 дена, а потоа се брише засекогаш.</item>
+        <item quantity="other">%1$s фотографии се преместени во корпа. Можеш да ги вратиш од корпата во галеријата околу 30 дена, а потоа се бришат засекогаш.</item>
+    </plurals>
+    <!-- CHECK: "vault" is called "Скриени фотографии" everywhere in Macedonian -->
+    <plurals name="done_hidden_body">
+        <item quantity="one">%1$s фотографија е преместена во Скриени фотографии. Веќе не се гледа во галеријата. Отвори ги Скриени фотографии кога сакаш за да ја вратиш или избришеш.</item>
+        <item quantity="other">%1$s фотографии се преместени во Скриени фотографии. Веќе не се гледаат во галеријата. Отвори ги Скриени фотографии кога сакаш за да ги вратиш или избришеш.</item>
+    </plurals>
+    <!-- CHECK: "the other 1" / "the other 5" -->
+    <plurals name="done_review_others">
+        <item quantity="one">Прегледај ја преостанатата %1$s</item>
+        <item quantity="other">Прегледај ги преостанатите %1$s</item>
+    </plurals>
+
+    <plurals name="busy_moving_to_vault">
+        <item quantity="one">Се скрива %1$s фотографија…</item>
+        <item quantity="other">Се кријат %1$s фотографии…</item>
+    </plurals>
+
+    <plurals name="vault_ticked">
+        <item quantity="one">%1$s означена</item>
+        <item quantity="other">%1$s означени</item>
+    </plurals>
+    <plurals name="vault_restored">
+        <item quantity="one">%1$s фотографија е вратена во галеријата</item>
+        <item quantity="other">%1$s фотографии се вратени во галеријата</item>
+    </plurals>
+    <plurals name="vault_delete_body">
+        <item quantity="one">%1$s фотографија ќе биде трајно избришана. Ова не може да се врати.</item>
+        <item quantity="other">%1$s фотографии ќе бидат трајно избришани. Ова не може да се врати.</item>
+    </plurals>
+</resources>

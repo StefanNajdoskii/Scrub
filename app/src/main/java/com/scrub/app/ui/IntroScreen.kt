@@ -1,6 +1,7 @@
 package com.scrub.app.ui
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
@@ -43,11 +44,13 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.scrub.app.R
 import kotlinx.coroutines.launch
 
 /** Remembers that the first-run introduction was seen, on this device. */
@@ -62,14 +65,16 @@ object IntroPrefs {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().putBoolean(KEY_DONE, true).apply()
 }
 
-private class IntroPage(val title: String, val body: String, val art: @Composable (Modifier) -> Unit)
+private class IntroPage(
+    @param:StringRes val title: Int,
+    @param:StringRes val body: Int,
+    val art: @Composable (Modifier) -> Unit,
+)
 
 private val introPages = listOf(
-    IntroPage("Pick their face", "Choose a photo of them and tap their face.") { PickFaceArt(it) },
-    IntroPage("Scrub checks your photos", "It looks through your gallery on this phone. Nothing is uploaded.") {
-        ScanArt(it)
-    },
-    IntroPage("You decide", "Review what it found. Nothing is removed until you confirm.") { DecideArt(it) },
+    IntroPage(R.string.intro_page1_title, R.string.intro_page1_body) { PickFaceArt(it) },
+    IntroPage(R.string.intro_page2_title, R.string.intro_page2_body) { ScanArt(it) },
+    IntroPage(R.string.intro_page3_title, R.string.intro_page3_body) { DecideArt(it) },
 )
 
 /** Three numbered pages shown once after the first sign-in. */
@@ -90,7 +95,7 @@ fun IntroScreen(onFinished: () -> Unit, initialPage: Int = 0) {
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (!last) QuietButton("Skip", onClick = onFinished)
+            if (!last) QuietButton(stringResource(R.string.intro_skip), onClick = onFinished)
         }
 
         HorizontalPager(state = pager, modifier = Modifier.weight(1f)) { index ->
@@ -100,7 +105,7 @@ fun IntroScreen(onFinished: () -> Unit, initialPage: Int = 0) {
         PageDots(pager, Modifier.align(Alignment.CenterHorizontally))
         Spacer(Modifier.height(24.dp))
         PrimaryButton(
-            text = if (last) "Get started" else "Next",
+            text = stringResource(if (last) R.string.intro_get_started else R.string.intro_next),
             onClick = {
                 if (last) onFinished()
                 else scope.launch {
@@ -117,6 +122,10 @@ fun IntroScreen(onFinished: () -> Unit, initialPage: Int = 0) {
 @Composable
 private fun IntroPageContent(index: Int, page: IntroPage) {
     val c = ScrubTheme.colors
+    val title = stringResource(page.title)
+    val spokenTitle = stringResource(
+        R.string.intro_step_description, formatCount(index + 1), formatCount(introPages.size), title,
+    )
     Column(
         Modifier
             .fillMaxSize()
@@ -139,22 +148,22 @@ private fun IntroPageContent(index: Int, page: IntroPage) {
                 .background(c.graphite),
             contentAlignment = Alignment.Center,
         ) {
-            Text("${index + 1}", style = ScrubType.StepNumber, color = c.chalk)
+            Text(formatCount(index + 1), style = ScrubType.StepNumber, color = c.chalk)
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            page.title,
+            title,
             style = ScrubType.ScreenTitle,
             color = c.graphite,
             textAlign = TextAlign.Center,
             modifier = Modifier.semantics {
                 heading()
-                contentDescription = "Step ${index + 1} of ${introPages.size}: ${page.title}"
+                contentDescription = spokenTitle
             },
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            page.body,
+            stringResource(page.body),
             style = ScrubType.Body,
             color = c.pencil,
             textAlign = TextAlign.Center,
@@ -167,10 +176,11 @@ private fun IntroPageContent(index: Int, page: IntroPage) {
 private fun PageDots(pager: PagerState, modifier: Modifier = Modifier) {
     val c = ScrubTheme.colors
     val off = rememberAnimationsOff()
+    val spoken = stringResource(
+        R.string.intro_page_indicator, formatCount(pager.currentPage + 1), formatCount(pager.pageCount),
+    )
     Row(
-        modifier.semantics {
-            contentDescription = "Page ${pager.currentPage + 1} of ${pager.pageCount}"
-        },
+        modifier.semantics { contentDescription = spoken },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         repeat(pager.pageCount) { i ->
@@ -305,11 +315,11 @@ private fun DecideArt(modifier: Modifier) {
 // Previews
 // ---------------------------------------------------------------------------------------------
 
-@ScreenPreviews
-@androidx.compose.runtime.Composable
+@LocalizedScreenPreviews
+@Composable
 private fun IntroPage1Preview() = PreviewFrame { IntroScreen(onFinished = {}, initialPage = 0) }
 
-@ScreenPreviews
+@LocalizedScreenPreviews
 @Composable
 private fun IntroPage2Preview() = PreviewFrame { IntroScreen(onFinished = {}, initialPage = 1) }
 

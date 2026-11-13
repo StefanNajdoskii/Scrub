@@ -67,10 +67,12 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.scrub.app.R
 
 private val FieldShape = RoundedCornerShape(ButtonRadius)
 
@@ -174,7 +176,9 @@ fun ScrubTextField(
                         if (isPassword) {
                             IconAction(
                                 icon = if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                contentDescription = if (visible) "Hide password" else "Show password",
+                                contentDescription = stringResource(
+                                    if (visible) R.string.field_hide_password else R.string.field_show_password
+                                ),
                                 onClick = { visible = !visible },
                             )
                         }
@@ -313,6 +317,22 @@ tailrec fun Context.findActivity(): Activity? = when (this) {
     uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
 )
 annotation class ScreenPreviews
+
+/**
+ * [ScreenPreviews] in English and Macedonian, light and dark, at 360dp: checks that longer
+ * Macedonian text wraps instead of being cut off, and that headings use the Cyrillic font.
+ */
+@Preview(name = "EN light", showBackground = true, widthDp = 360, heightDp = 780, locale = "en")
+@Preview(
+    name = "EN dark", showBackground = true, widthDp = 360, heightDp = 780, locale = "en",
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
+@Preview(name = "MK light", showBackground = true, widthDp = 360, heightDp = 780, locale = "mk")
+@Preview(
+    name = "MK dark", showBackground = true, widthDp = 360, heightDp = 780, locale = "mk",
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
+annotation class LocalizedScreenPreviews
 
 /** Theme + background for previews. */
 @Composable

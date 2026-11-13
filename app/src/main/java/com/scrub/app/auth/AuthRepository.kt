@@ -2,6 +2,7 @@ package com.scrub.app.auth
 
 import android.app.Activity
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -44,22 +45,25 @@ data class AuthUser(
     val method: SignInMethod,
     val emailVerified: Boolean,
 ) {
-    /** Name to show: the display name, or the part of the email before the @. */
-    val displayName: String
-        get() = name?.takeIf { it.isNotBlank() } ?: email?.substringBefore('@') ?: "You"
+    /**
+     * Name to show: the display name, or the part of the email before the @. Null when there's
+     * neither; the UI then shows R.string.account_name_fallback ("You").
+     */
+    val displayName: String?
+        get() = name?.takeIf { it.isNotBlank() } ?: email?.substringBefore('@')?.takeIf { it.isNotEmpty() }
 
     val initial: String
-        get() = displayName.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?"
+        get() = displayName?.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?"
 }
 
-/** An auth failure with a message that can be shown to the user as-is. */
+/** An auth failure with a message, as a string resource, that can be shown to the user as-is. */
 class AuthError(
-    message: String,
+    @param:StringRes val messageRes: Int,
     val kind: Kind = Kind.Other,
     /** The form field this error belongs under, if any. */
     val field: Field? = null,
     cause: Throwable? = null,
-) : Exception(message, cause) {
+) : Exception(kind.name, cause) {
     enum class Kind { Other, Cancelled, RecentLoginRequired, EmailInUse }
     enum class Field { Email, Password }
 }
@@ -195,40 +199,31 @@ class AuthRepository(context: Context) {
         is AuthError -> e
 
         // Credential Manager (Google account picker)
-        is GetCredentialCancellationException -> AuthError("", AuthError.Kind.Cancelled, cause = e)
-        is NoCredentialException -> AuthError(
-            "No Google account found on this phone. Add one in Settings, then try again.", cause = e,
-        )
+        is GetCredentialCancellationException -> AuthError(GENERIC, AuthError.Kind.Cancelled, cause = e)
+        is NoCredentialException -> AuthError(R.string.auth_error_no_google_account, cause = e)
         is GetCredentialException, is GoogleIdTokenParsingException -> AuthError(GOOGLE_FAILED, cause = e)
 
         // Firebase
         is FirebaseNetworkException -> AuthError(NO_NETWORK, cause = e)
-        is FirebaseTooManyRequestsException -> AuthError(
-            "Too many attempts. Wait a few minutes, then try again.", cause = e,
-        )
+        is FirebaseTooManyRequestsException -> AuthError(R.string.auth_error_too_many_attempts, cause = e)
         is FirebaseAuthRecentLoginRequiredException -> AuthError(
-            "For your security, sign in again to continue.", AuthError.Kind.RecentLoginRequired, cause = e,
+            R.string.auth_error_sign_in_again, AuthError.Kind.RecentLoginRequired, cause = e,
         )
         is FirebaseAuthUserCollisionException ->
-            if (op == Op.Google) AuthError(
-                "This email already has a Scrub account with a password. Sign in with your email instead.",
-                cause = e,
-            )
+            if (op == Op.Google) AuthError(R.string.auth_error_google_email_has_password, cause = e)
             else AuthError(EMAIL_IN_USE, AuthError.Kind.EmailInUse, AuthError.Field.Email, e)
         // Must come before InvalidCredentials: it's a subclass of it.
         is FirebaseAuthWeakPasswordException -> AuthError(WEAK_PASSWORD, field = AuthError.Field.Password, cause = e)
         is FirebaseAuthInvalidUserException -> when {
-            e.errorCode == "ERROR_USER_DISABLED" -> AuthError("This account has been turned off.", cause = e)
-            e.errorCode == "ERROR_USER_MISMATCH" -> AuthError(
-                "That's a different Google account. Pick the one you signed in with.", cause = e,
-            )
+            e.errorCode == "ERROR_USER_DISABLED" -> AuthError(R.string.auth_error_account_disabled, cause = e)
+            e.errorCode == "ERROR_USER_MISMATCH" -> AuthError(R.string.auth_error_wrong_google_account, cause = e)
             op == Op.Reauth || op == Op.Delete -> AuthError(SIGNED_OUT, cause = e)
             else -> AuthError(WRONG_CREDENTIALS, cause = e)
         }
         is FirebaseAuthInvalidCredentialsException -> when {
             e.errorCode == "ERROR_INVALID_EMAIL" ->
-                AuthError("Enter a valid email address.", field = AuthError.Field.Email, cause = e)
-            op == Op.Reauth -> AuthError("That password is incorrect.", field = AuthError.Field.Password, cause = e)
+                AuthError(R.string.validation_invalid_email, field = AuthError.Field.Email, cause = e)
+            op == Op.Reauth -> AuthError(R.string.auth_error_wrong_password, field = AuthError.Field.Password, cause = e)
             op == Op.Google -> AuthError(GOOGLE_FAILED, cause = e)
             else -> AuthError(WRONG_CREDENTIALS, cause = e)
         }
@@ -248,13 +243,14 @@ class AuthRepository(context: Context) {
         )
     }
 
+    /** Messages used in more than one place. The text is in strings.xml. */
     companion object {
-        const val WRONG_CREDENTIALS = "Email or password is incorrect."
-        const val EMAIL_IN_USE = "An account with this email already exists. Sign in instead?"
-        const val WEAK_PASSWORD = "Use at least 8 characters."
-        const val NO_NETWORK = "No internet connection. Signing in needs internet; scanning your photos doesn't."
-        const val GOOGLE_FAILED = "Google sign-in didn't work. Try again."
-        const val SIGNED_OUT = "You've been signed out. Sign in again."
-        const val GENERIC = "Something went wrong. Try again."
+        val WRONG_CREDENTIALS = R.string.auth_error_wrong_credentials
+        val EMAIL_IN_USE = R.string.auth_error_email_in_use
+        val WEAK_PASSWORD = R.string.auth_error_weak_password
+        val NO_NETWORK = R.string.auth_error_no_network
+        val GOOGLE_FAILED = R.string.auth_error_google_failed
+        val SIGNED_OUT = R.string.auth_error_signed_out
+        val GENERIC = R.string.auth_error_generic
     }
 }

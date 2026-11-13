@@ -18,7 +18,11 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
@@ -58,24 +62,34 @@ fun AnimatedCount(
         label = "count",
         modifier = modifier,
     ) { n ->
-        Text("$n", style = style, color = color, maxLines = 1)
+        Text(formatCount(n), style = style, color = color, maxLines = 1)
     }
 }
 
-/** "Before {count} after", with only the number rolling. Reads as one sentence to TalkBack. */
+/**
+ * "Before {count} after", with only the number rolling. Reads as one sentence to TalkBack.
+ * When it doesn't fit on one line (longer translations, narrow buttons) it wraps between the
+ * parts, and each part wraps on its own, so nothing is cut off. [centered] centers the lines.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CountText(
-    before: String,
-    count: Int,
-    after: String,
+    label: CountLabel,
     style: TextStyle,
     color: Color,
     modifier: Modifier = Modifier,
+    centered: Boolean = false,
 ) {
-    Row(modifier.clearAndSetSemantics { contentDescription = "$before$count$after" }) {
-        if (before.isNotEmpty()) Text(before, style = style, color = color, maxLines = 1)
-        AnimatedCount(count, style, color)
-        if (after.isNotEmpty()) Text(after, style = style, color = color, maxLines = 1)
+    val number = formatCount(label.count)
+    val spoken = if (label.showCount) "${label.before}$number${label.after}" else label.before
+    val align = if (centered) TextAlign.Center else TextAlign.Start
+    FlowRow(
+        modifier.clearAndSetSemantics { contentDescription = spoken },
+        horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start,
+    ) {
+        if (label.before.isNotEmpty()) Text(label.before, style = style, color = color, textAlign = align)
+        if (label.showCount) AnimatedCount(label.count, style, color)
+        if (label.after.isNotEmpty()) Text(label.after, style = style, color = color, textAlign = align)
     }
 }
 
@@ -97,8 +111,10 @@ fun RollingNumber(
         animationSpec = if (off) tween(0) else tween(450, easing = LinearEasing),
         label = "rolling",
     )
-    val text = NumberFormat.getIntegerInstance().format(shown)
-    Row(modifier.clearAndSetSemantics { contentDescription = NumberFormat.getIntegerInstance().format(value) }) {
+    val format = NumberFormat.getIntegerInstance(currentLocale())
+    val text = format.format(shown)
+    val spoken = format.format(value)
+    Row(modifier.clearAndSetSemantics { contentDescription = spoken }) {
         // Key digits from the right so the ones digit keeps its slot as the number grows.
         text.forEachIndexed { i, ch ->
             val slot = text.length - i

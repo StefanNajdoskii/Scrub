@@ -27,32 +27,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.scrub.app.R
 import com.scrub.app.Screen
 import com.scrub.app.ScrubViewModel
+import java.text.NumberFormat
 
 /** The vault, shown to people as "Hidden photos". */
 @Composable
 fun VaultScreen(vm: ScrubViewModel) {
     val c = ScrubTheme.colors
     val context = LocalContext.current
+    // For the toast after restoring, shown from a callback outside composition.
+    val number = NumberFormat.getIntegerInstance(currentLocale())
     var selected by remember { mutableStateOf(emptySet<String>()) }
     var confirmDelete by remember { mutableStateOf(false) }
     val vaultList = vm.vaultItems
     val chosen = vaultList.filter { it.fileName in selected }
 
     Column(Modifier.fillMaxSize()) {
-        TopBar("Hidden photos", onBack = { vm.screen = Screen.Home }, actions = {
+        TopBar(stringResource(R.string.hidden_photos), onBack = { vm.screen = Screen.Home }, actions = {
             if (vaultList.isNotEmpty()) {
                 val all = selected.size == vaultList.size
-                QuietButton(if (all) "Select none" else "Select all", onClick = {
+                QuietButton(stringResource(if (all) R.string.action_select_none else R.string.action_select_all), onClick = {
                     selected = if (all) emptySet() else vaultList.map { it.fileName }.toSet()
                 })
             }
         })
         Text(
-            "Hidden from your gallery and other apps. Restore them any time. " +
-                "Uninstalling Scrub permanently deletes everything in here.",
+            stringResource(R.string.vault_intro),
             modifier = Modifier.padding(horizontal = Gutter),
             style = ScrubType.Small,
             color = c.pencil,
@@ -70,11 +74,14 @@ fun VaultScreen(vm: ScrubViewModel) {
             ) {
                 Hero(
                     Icons.Outlined.VisibilityOff,
-                    "Nothing hidden yet",
-                    "Photos you hide after a scan will show up here.",
+                    stringResource(R.string.vault_empty_title),
+                    stringResource(R.string.vault_empty_body),
                 )
             }
         } else {
+            val photoTicked = stringResource(R.string.vault_photo_ticked)
+            val photo = stringResource(R.string.vault_photo)
+            val resources = context.resources
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 contentPadding = PaddingValues(horizontal = Gutter, vertical = 16.dp),
@@ -87,7 +94,7 @@ fun VaultScreen(vm: ScrubViewModel) {
                     val selecting = selected.isNotEmpty()
                     PhotoTile(
                         model = vm.vaultFile(item),
-                        contentDescription = if (isSel) "Hidden photo, ticked" else "Hidden photo",
+                        contentDescription = if (isSel) photoTicked else photo,
                         selected = if (selecting) isSel else null,
                         dimmed = selecting && !isSel,
                         onClick = {
@@ -97,17 +104,18 @@ fun VaultScreen(vm: ScrubViewModel) {
                 }
             }
 
-            ActionBar(caption = if (chosen.isEmpty()) "Tap photos to choose them" else "${chosen.size} ticked") {
+            ActionBar(caption = if (chosen.isEmpty()) stringResource(R.string.vault_tap_to_choose) else pluralCount(R.plurals.vault_ticked, chosen.size)) {
                 DestructiveButton(
-                    "Delete forever",
+                    stringResource(R.string.action_delete_forever),
                     onClick = { confirmDelete = true },
                     enabled = chosen.isNotEmpty(),
                 )
                 PrimaryButton(
-                    "Restore",
+                    stringResource(R.string.vault_restore),
                     onClick = {
                         vm.restoreFromVault(chosen) { ok ->
-                            Toast.makeText(context, "${ScrubViewModel.plural(ok)} back in your gallery", Toast.LENGTH_SHORT).show()
+                            val text = resources.getQuantityString(R.plurals.vault_restored, ok, number.format(ok))
+                            Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
                         }
                         selected = emptySet()
                     },
@@ -121,22 +129,22 @@ fun VaultScreen(vm: ScrubViewModel) {
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete forever?", style = ScrubType.SectionTitle, color = c.graphite) },
+            title = { Text(stringResource(R.string.vault_delete_title), style = ScrubType.SectionTitle, color = c.graphite) },
             text = {
                 Text(
-                    "${ScrubViewModel.plural(chosen.size)} will be permanently erased. This can't be undone.",
+                    pluralCount(R.plurals.vault_delete_body, chosen.size),
                     style = ScrubType.Body,
                     color = c.pencil,
                 )
             },
             confirmButton = {
-                DestructiveButton("Delete forever", onClick = {
+                DestructiveButton(stringResource(R.string.action_delete_forever), onClick = {
                     vm.deleteFromVault(chosen)
                     selected = emptySet()
                     confirmDelete = false
                 })
             },
-            dismissButton = { QuietButton("Cancel", onClick = { confirmDelete = false }) },
+            dismissButton = { QuietButton(stringResource(R.string.action_cancel), onClick = { confirmDelete = false }) },
             shape = DialogShape,
             containerColor = c.paper,
             tonalElevation = 0.dp,
