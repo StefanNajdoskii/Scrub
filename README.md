@@ -12,7 +12,7 @@ The only thing that goes online is signing in to your account (Firebase Authenti
 3. Plug in an Android phone (Android 11 or newer) with USB debugging turned on,
    or start an emulator, then press **Run ▶**.
 
-## How it works
+## How it works.
 
 | Step | What happens |
 |---|---|
