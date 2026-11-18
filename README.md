@@ -10,7 +10,7 @@ The only thing that goes online is signing in to your account (Firebase Authenti
 2. Wait for the Gradle sync to finish. The first sync downloads the dependencies.
    If Studio offers to upgrade the Android Gradle Plugin, accepting is fine.
 3. Plug in an Android phone (Android 11 or newer) with USB debugging turned on,
-   or start an emulator, then press **Run ▶**.
+   or start an emulator, then press **Run **.
 
 ## How it works.
 
